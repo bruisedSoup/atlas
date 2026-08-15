@@ -1,0 +1,39 @@
+---
+// src/pages/signin.astro
+// Initiates Supabase Google OAuth — runs server-side so the redirect_to
+// URL is constructed correctly and never exposed in client JS.
+import { supabase } from "../lib/supabase";
+
+const nextAppUrl = import.meta.env.NEXT_APP_URL ?? "http://localhost:3000";
+
+// If this page is requested directly, kick off the OAuth flow immediately.
+const { data, error } = await supabase.auth.signInWithOAuth({
+  provider: "google",
+  options: {
+    redirectTo: `${nextAppUrl}/auth/callback`,
+    scopes: "openid email profile",
+  },
+});
+
+if (error) {
+  // Surface the error rather than silently failing.
+  console.error("[atlas-web] OAuth initiation error:", error.message);
+}
+
+if (data?.url) {
+  return Astro.redirect(data.url, 302);
+}
+// Fallback — should not happen if Supabase is configured correctly.
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Signing in… — Atlas</title>
+    <meta name="robots" content="noindex" />
+  </head>
+  <body>
+    <p>Redirecting to Google sign-in…</p>
+    {error && <p style="color:red">Error: {error.message}. <a href="/">Go back</a></p>}
+  </body>
+</html>

@@ -1,0 +1,46 @@
+---
+// src/pages/auth/callback.astro
+// Google OAuth callback handler.
+// Supabase sends ?code=... here after the user consents.
+// We exchange the code for a session, set the auth cookie, then
+// redirect to the Next.js dashboard.
+
+import { supabase } from "../../lib/supabase";
+
+const code = Astro.url.searchParams.get("code");
+const error_param = Astro.url.searchParams.get("error");
+const error_description = Astro.url.searchParams.get("error_description");
+
+// Surface provider-level errors (e.g. user denied consent)
+if (error_param) {
+  console.error("[atlas-web] OAuth provider error:", error_param, error_description);
+  return Astro.redirect(`/?auth_error=${encodeURIComponent(error_description ?? error_param)}`, 302);
+}
+
+if (!code) {
+  console.error("[atlas-web] /auth/callback reached without a code param");
+  return Astro.redirect("/?auth_error=missing_code", 302);
+}
+
+const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+
+if (error || !data.session) {
+  console.error("[atlas-web] Code exchange failed:", error?.message);
+  return Astro.redirect(`/?auth_error=${encodeURIComponent(error?.message ?? "exchange_failed")}`, 302);
+}
+
+// The session is now set in the Supabase client.
+// Forward the access_token and refresh_token to the Next.js app via
+// query params so its middleware can establish its own Supabase session.
+// (Cookie-based hand-off requires both apps on the same domain; for local
+// dev they're on different ports so we use token params — the Next.js
+// middleware exchanges these for its own secure cookie.)
+const nextAppUrl = import.meta.env.NEXT_APP_URL ?? "http://localhost:3000";
+const params = new URLSearchParams({
+  access_token: data.session.access_token,
+  refresh_token: data.session.refresh_token,
+  type: "oauth",
+});
+
+return Astro.redirect(`${nextAppUrl}/auth/callback?${params.toString()}`, 302);
+---

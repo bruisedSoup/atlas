@@ -47,3 +47,11 @@ a {
     color-scheme: dark;
   }
 }
+
+/* Hide Next.js dev overlay indicator button and toast */
+nextjs-portal,
+[data-nextjs-toast],
+[data-nextjs-dialog-overlay],
+#nextjs-dev-tools-indicator {
+  display: none !important;
+}

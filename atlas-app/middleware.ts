@@ -12,7 +12,14 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const PUBLIC_PATHS = ["/auth/callback", "/auth/login"];
+const PUBLIC_PATHS = [
+  "/auth/callback",
+  "/auth/login",
+  "/manifest.webmanifest",
+  "/manifest.json",
+  "/apple-touch-icon.png",
+  "/icons",
+];
 
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });

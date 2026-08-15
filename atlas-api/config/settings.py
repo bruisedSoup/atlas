@@ -48,6 +48,9 @@ INSTALLED_APPS = [
     "corsheaders",
     # Atlas apps
     "users",
+    "courses",
+    "tasks",
+    "schedule",
 ]
 
 # ---------------------------------------------------------------------------

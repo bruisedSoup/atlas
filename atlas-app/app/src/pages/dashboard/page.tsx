@@ -67,11 +67,24 @@ export default function DashboardPage() {
     }
   }, [accessToken, apiUrl]);
 
+  useEffect(() => {
+    // 0ms instant cache load
+    try {
+      const cached = localStorage.getItem("atlas_cached_tasks");
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setTasks(parsed);
+          setLoading(false);
+        }
+      }
+    } catch {}
+  }, []);
+
   // Fetch Tasks
   const fetchTasks = useCallback(async (tokenOverride?: string) => {
     const token = tokenOverride || accessToken;
     if (!token) return;
-    setLoading(true);
     try {
       let url = `${apiUrl}/api/tasks/?status=${statusFilter}`;
       if (activeLabelFilter !== "All") {
@@ -90,7 +103,13 @@ export default function DashboardPage() {
       });
       if (res.ok) {
         const data = await res.json();
-        setTasks(Array.isArray(data) ? data : data.results || []);
+        const items = Array.isArray(data) ? data : data.results || [];
+        setTasks(items);
+        try {
+          if (statusFilter === "ongoing" && activeLabelFilter === "All") {
+            localStorage.setItem("atlas_cached_tasks", JSON.stringify(items));
+          }
+        } catch {}
       }
     } catch (err) {
       console.error("Failed to fetch tasks:", err);

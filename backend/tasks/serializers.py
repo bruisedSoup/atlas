@@ -1,6 +1,13 @@
 from rest_framework import serializers
-from .models import Task
+from .models import Task, CustomLabel
 from courses.serializers import CourseSerializer
+
+
+class CustomLabelSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomLabel
+        fields = ["id", "name", "created_at"]
+        read_only_fields = ["id", "created_at"]
 
 
 class TaskSerializer(serializers.ModelSerializer):
@@ -15,6 +22,7 @@ class TaskSerializer(serializers.ModelSerializer):
             "title",
             "description",
             "label_type",
+            "custom_label",
             "status",
             "deadline_date",
             "deadline_time",

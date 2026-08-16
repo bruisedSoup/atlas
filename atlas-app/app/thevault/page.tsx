@@ -92,19 +92,22 @@ export default function TheVaultPage() {
           avatar_url: googleAvatar,
         });
       }
+
+      fetchCompletedTasks(session.access_token);
     }
 
     initAuth();
   }, [apiUrl, supabase]);
 
   // Fetch Completed Tasks
-  const fetchCompletedTasks = useCallback(async () => {
-    if (!accessToken) return;
+  const fetchCompletedTasks = useCallback(async (tokenOverride?: string) => {
+    const token = tokenOverride || accessToken;
+    if (!token) return;
     setLoading(true);
     try {
       const res = await fetch(`${apiUrl}/api/tasks/?status=done`, {
         headers: {
-          Authorization: `Bearer ${accessToken}`,
+          Authorization: `Bearer ${token}`,
         },
       });
       if (res.ok) {

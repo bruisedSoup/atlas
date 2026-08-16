@@ -164,7 +164,6 @@ export function VaultTodoList({
                         fontSize: "1.1rem",
                         color: "#111827",
                         display: "block",
-                        textDecoration: "line-through",
                       }}
                     >
                       {task.title}

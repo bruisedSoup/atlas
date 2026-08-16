@@ -406,7 +406,6 @@ export function TodoList({
                       whiteSpace: "nowrap",
                       overflow: "hidden",
                       textOverflow: "ellipsis",
-                      textDecoration: isChecked && statusFilter === "completed" ? "line-through" : "none",
                     }}
                   >
                     {task.title}

@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Sidebar } from "./components/Sidebar";
 import { HeaderCards } from "./components/HeaderCards";
-import { TodoList, TaskItem } from "./components/TodoList";
+import { TodoList, TaskItem, FilterStatus } from "./components/TodoList";
 import { TaskViewModal } from "./modals/TaskViewModal";
 import { TaskEditModal } from "./modals/TaskEditModal";
 import { CustomLabelItem } from "./modals/CustomLabelModal";
@@ -23,7 +23,7 @@ export default function DashboardPage() {
   const [tasks, setTasks] = useState<TaskItem[]>([]);
   const [courses, setCourses] = useState<{ id: string; course_name: string; course_code?: string }[]>([]);
   const [customLabels, setCustomLabels] = useState<CustomLabelItem[]>([]);
-  const [statusFilter, setStatusFilter] = useState<"ongoing" | "done" | "archived">("ongoing");
+  const [statusFilter, setStatusFilter] = useState<FilterStatus>("ongoing");
   const [activeLabelFilter, setActiveLabelFilter] = useState("All");
   const [loading, setLoading] = useState(true);
   const [accessToken, setAccessToken] = useState<string>("");

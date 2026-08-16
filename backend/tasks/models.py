@@ -53,6 +53,7 @@ class Task(models.Model):
     deadline_date = models.DateField(null=True, blank=True)
     deadline_time = models.TimeField(null=True, blank=True)
     notify_before_deadline = models.BooleanField(default=False)
+    reminder_sent = models.BooleanField(default=False)
     color = models.CharField(max_length=50, default="#60a5fa")  # pushpin color
     icon_seed = models.IntegerField(default=0)
     platform = models.CharField(max_length=50, choices=PLATFORM_CHOICES, default="manual")

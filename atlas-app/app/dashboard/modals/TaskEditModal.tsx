@@ -151,7 +151,6 @@ export function TaskEditModal({
   return (
     <>
       <div
-        onClick={onClose}
         style={{
           position: "fixed",
           inset: 0,
@@ -165,7 +164,6 @@ export function TaskEditModal({
         }}
       >
         <div
-          onClick={(e) => e.stopPropagation()}
           style={{
             width: "100%",
             maxWidth: "540px",

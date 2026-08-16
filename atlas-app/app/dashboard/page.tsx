@@ -152,11 +152,16 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (accessToken) {
-      fetchTasks();
       fetchCourses();
       fetchCustomLabels();
     }
-  }, [accessToken, fetchTasks, fetchCourses, fetchCustomLabels]);
+  }, [accessToken, fetchCourses, fetchCustomLabels]);
+
+  useEffect(() => {
+    if (accessToken) {
+      fetchTasks();
+    }
+  }, [accessToken, fetchTasks]);
 
   // Add Custom Label
   const handleAddCustomLabel = async (name: string) => {

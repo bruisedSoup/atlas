@@ -259,7 +259,7 @@ export function ProfileModal({
               rows={2}
               value={bio}
               onChange={(e) => setBio(e.target.value)}
-              placeholder="e.g. “Carpi diem” or your favorite personal motto"
+              placeholder="Add user bio"
               style={{
                 width: "100%",
                 padding: "10px 14px",

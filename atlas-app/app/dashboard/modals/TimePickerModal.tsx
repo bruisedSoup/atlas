@@ -201,15 +201,22 @@ function WheelColumn<T extends string | number>({
 export function TimePickerModal({
   isOpen,
   onClose,
-  selectedTime = "18:00",
+  selectedTime = "",
   onSelectTime,
 }: TimePickerModalProps) {
-  // Parse initial 24h time to 12h + AM/PM
-  const parseTime = (t: string) => {
-    if (!t) return { hour: 6, minute: "30", period: "AM" };
-    const [hStr, mStr] = t.split(":");
-    let h = parseInt(hStr, 10);
-    const m = String(mStr || "00").padStart(2, "0");
+  // Parse initial 24h time to 12h + AM/PM (defaults to current time)
+  const parseTime = (t?: string) => {
+    let h: number;
+    let m: string;
+    if (!t) {
+      const now = new Date();
+      h = now.getHours();
+      m = String(now.getMinutes()).padStart(2, "0");
+    } else {
+      const [hStr, mStr] = t.split(":");
+      h = parseInt(hStr, 10);
+      m = String(mStr || "00").padStart(2, "0");
+    }
     const p = h >= 12 ? "PM" : "AM";
     if (h === 0) h = 12;
     else if (h > 12) h -= 12;

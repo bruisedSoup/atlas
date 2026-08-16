@@ -142,6 +142,22 @@ def send_deadline_reminder_email(task: Task) -> bool:
         )
         task.reminder_sent = True
         task.save(update_fields=["reminder_sent"])
+
+        # Also push in-app real-time WebSocket alert
+        try:
+            from realtime.events import send_realtime_notification
+            send_realtime_notification(
+                user_id=task.user.id,
+                title="⏰ Task Due in 15 Minutes!",
+                message=f"\"{task.title}\" is due at {time_display}.",
+                task_id=task.id,
+                task_title=task.title,
+                deadline_time=time_display,
+                notification_type="deadline_reminder",
+            )
+        except Exception as ws_err:
+            print(f"Failed to send realtime notification: {ws_err}")
+
         return True
     except Exception as e:
         print(f"Error sending deadline notification for task {task.id}: {e}")

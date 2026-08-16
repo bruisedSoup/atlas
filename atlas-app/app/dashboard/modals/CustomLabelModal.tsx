@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 
 export interface CustomLabelItem {
   id?: string;
@@ -29,21 +29,55 @@ export function CustomLabelModal({
   const [isEditMode, setIsEditMode] = useState(false);
   const [newLabelText, setNewLabelText] = useState("");
   const [currentSelected, setCurrentSelected] = useState(selectedLabel);
+  const [localLabels, setLocalLabels] = useState<CustomLabelItem[]>(labels);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setCurrentSelected(selectedLabel);
   }, [selectedLabel, isOpen]);
 
+  useEffect(() => {
+    setLocalLabels(labels);
+  }, [labels]);
+
   if (!isOpen) return null;
 
-  const handleAdd = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
+  const handleAdd = async () => {
     const trimmed = newLabelText.trim();
-    if (!trimmed) return;
+    if (!trimmed) {
+      inputRef.current?.focus();
+      return;
+    }
 
-    await onAddLabel(trimmed);
+    // Optimistically add to local state immediately
+    const tempItem: CustomLabelItem = { id: `temp-${Date.now()}`, name: trimmed };
+    if (!localLabels.some((l) => l.name.toLowerCase() === trimmed.toLowerCase())) {
+      setLocalLabels((prev) => [...prev, tempItem]);
+    }
     setCurrentSelected(trimmed);
     setNewLabelText("");
+
+    // Sync to backend
+    try {
+      await onAddLabel(trimmed);
+    } catch (err) {
+      console.error("Failed to add label:", err);
+    }
+  };
+
+  const handleDelete = async (lbl: CustomLabelItem) => {
+    // Optimistically remove from local state immediately
+    setLocalLabels((prev) => prev.filter((l) => l.name !== lbl.name && l.id !== lbl.id));
+    if (currentSelected === lbl.name) {
+      setCurrentSelected("");
+    }
+
+    // Sync to backend
+    try {
+      await onDeleteLabel(lbl);
+    } catch (err) {
+      console.error("Failed to delete label:", err);
+    }
   };
 
   const handleConfirm = () => {
@@ -104,7 +138,7 @@ export function CustomLabelModal({
                 fontFamily: "'Inter', sans-serif",
                 fontSize: "1rem",
                 fontWeight: 600,
-                color: "#111827",
+                color: isEditMode ? "#ef4444" : "#111827",
                 textDecoration: "underline",
                 cursor: "pointer",
                 padding: "2px 0",
@@ -137,26 +171,33 @@ export function CustomLabelModal({
           {/* Solid Line Above New Label Input */}
           <div style={{ height: "1.5px", backgroundColor: "#374151", marginBottom: "8px" }} />
 
-          {/* New Label Input Form (Clean transparent line between borders) */}
-          <form
-            onSubmit={handleAdd}
+          {/* New Label Input Form */}
+          <div
             style={{
               position: "relative",
               display: "flex",
               alignItems: "center",
-              height: "36px",
+              height: "38px",
               marginBottom: "8px",
             }}
           >
             <input
+              ref={inputRef}
               type="text"
               placeholder="New label"
               value={newLabelText}
               onChange={(e) => setNewLabelText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleAdd();
+                }
+              }}
               style={{
                 width: "100%",
                 height: "100%",
-                padding: "0 32px 0 2px",
+                padding: "0 34px 0 2px",
                 border: "none",
                 background: "transparent",
                 fontSize: "1rem",
@@ -166,7 +207,12 @@ export function CustomLabelModal({
               }}
             />
             <button
-              type="submit"
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleAdd();
+              }}
               title="Add label"
               style={{
                 position: "absolute",
@@ -186,7 +232,7 @@ export function CustomLabelModal({
             >
               +
             </button>
-          </form>
+          </div>
 
           {/* Solid Line Below New Label Input */}
           <div style={{ height: "1.5px", backgroundColor: "#374151", marginBottom: "4px" }} />
@@ -200,7 +246,7 @@ export function CustomLabelModal({
               flexDirection: "column",
             }}
           >
-            {labels.length === 0 ? (
+            {localLabels.length === 0 ? (
               <div
                 style={{
                   padding: "28px 4px",
@@ -215,7 +261,7 @@ export function CustomLabelModal({
                 Add one above!
               </div>
             ) : (
-              labels.map((lbl, idx) => {
+              localLabels.map((lbl, idx) => {
                 const isSelected = currentSelected === lbl.name;
 
                 return (
@@ -232,7 +278,7 @@ export function CustomLabelModal({
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "space-between",
-                      cursor: "pointer",
+                      cursor: isEditMode ? "default" : "pointer",
                       backgroundColor: isSelected ? "#eff6ff" : "transparent",
                       transition: "background 0.15s ease",
                     }}
@@ -254,15 +300,20 @@ export function CustomLabelModal({
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
-                          onDeleteLabel(lbl);
+                          handleDelete(lbl);
                         }}
                         style={{
-                          background: "none",
-                          border: "none",
+                          background: "#fee2e2",
+                          border: "1px solid #fca5a5",
+                          borderRadius: "6px",
                           color: "#ef4444",
-                          fontSize: "1.1rem",
+                          fontSize: "0.9rem",
+                          fontWeight: 700,
                           cursor: "pointer",
-                          padding: "0 4px",
+                          padding: "2px 8px",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
                         }}
                       >
                         ✕

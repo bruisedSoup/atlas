@@ -83,6 +83,9 @@ class SupabaseJWTAuthentication(BaseAuthentication):
         except Exception as exc:
             raise AuthenticationFailed(f"Invalid token: {exc}")
 
+        user_id = payload.get("sub")
+        email = payload.get("email", "")
+
         # Extract name & avatar from all possible Supabase OAuth locations
         metadata = payload.get("user_metadata") or {}
         identities = payload.get("identities") or []

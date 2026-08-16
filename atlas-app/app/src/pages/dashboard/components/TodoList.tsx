@@ -28,6 +28,7 @@ interface TodoListProps {
   onCompleteTask: (taskId: string) => void;
   onRefresh: () => void;
   loading?: boolean;
+  missedCount?: number;
 }
 
 export function TodoList({
@@ -39,6 +40,7 @@ export function TodoList({
   onCompleteTask,
   onRefresh,
   loading = false,
+  missedCount = 0,
 }: TodoListProps) {
   const [checkingId, setCheckingId] = useState<string | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -69,17 +71,7 @@ export function TodoList({
       id: "ongoing",
       label: "Ongoing",
       icon: (
-        /* Circular Clock with curved loop arrow matching screenshot */
-        <svg
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="#111827"
-          strokeWidth="1.9"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
           <path d="M12 3a9 9 0 1 0 8.5 6" />
           <polyline points="12 7 12 12 14.5 12" />
           <path d="M18 14v4l-3-2" />
@@ -90,21 +82,11 @@ export function TodoList({
       id: "missed",
       label: "Missed",
       icon: (
-        /* Circular Clock with exclamation mark */
-        <svg
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="#111827"
-          strokeWidth="1.9"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
           <path d="M12 3a9 9 0 1 0 8.5 6" />
           <polyline points="12 7 12 12 14.5 12" />
           <path d="M18.5 14v3.5" />
-          <circle cx="18.5" cy="20" r="0.75" fill="#111827" />
+          <circle cx="18.5" cy="20" r="0.75" fill="#dc2626" />
         </svg>
       ),
     },
@@ -112,22 +94,17 @@ export function TodoList({
       id: "completed",
       label: "Completed",
       icon: (
-        /* Clean Checkmark */
-        <svg
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="#111827"
-          strokeWidth="2.4"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
           <polyline points="20 6 9 17 4 12" />
         </svg>
       ),
     },
   ];
+
+  // Pill styling based on active filter
+  const pillBg = statusFilter === "missed" ? "#fee2e2" : statusFilter === "completed" ? "#dcfce7" : "#cbe4fc";
+  const pillBorder = statusFilter === "missed" ? "#dc2626" : statusFilter === "completed" ? "#16a34a" : "#111827";
+  const pillColor = statusFilter === "missed" ? "#dc2626" : statusFilter === "completed" ? "#16a34a" : "#111827";
 
   const currentOption = filterOptions.find((o) => o.id === statusFilter) || filterOptions[0];
 
@@ -165,15 +142,39 @@ export function TodoList({
             </h3>
           </div>
 
-          {/* Status Filter Pill Button (matching screenshot) */}
+          {/* Status Filter Pill Button */}
           <div style={{ position: "relative" }}>
+            {/* Red badge when missed tasks exist */}
+            {missedCount > 0 && statusFilter !== "missed" && (
+              <div style={{
+                position: "absolute",
+                top: "-6px",
+                right: "-6px",
+                width: "18px",
+                height: "18px",
+                borderRadius: "50%",
+                background: "#dc2626",
+                border: "2px solid #ffffff",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                zIndex: 10,
+              }}>
+                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 3a9 9 0 1 0 8.5 6" />
+                  <polyline points="12 7 12 12 14.5 12" />
+                  <path d="M18.5 14v3.5" />
+                  <circle cx="18.5" cy="20" r="0.75" fill="#ffffff" />
+                </svg>
+              </div>
+            )}
             <button
               type="button"
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
               style={{
-                background: "#cbe4fc", // Baby blue background
-                color: "#111827",
-                border: "1.5px solid #111827",
+                background: pillBg,
+                color: pillColor,
+                border: `1.5px solid ${pillBorder}`,
                 borderRadius: "24px",
                 padding: "4px 14px",
                 fontSize: "0.95rem",
@@ -188,12 +189,12 @@ export function TodoList({
               }}
             >
               <span>{currentOption.label}</span>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={pillColor} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="6 9 12 15 18 9" />
               </svg>
             </button>
 
-            {/* Custom Dropdown Menu Popup (matching screenshot) */}
+            {/* Dropdown Menu */}
             {isDropdownOpen && (
               <div
                 style={{
@@ -212,6 +213,13 @@ export function TodoList({
               >
                 {filterOptions.map((opt) => {
                   const isSelected = opt.id === statusFilter;
+                  const optBg = isSelected
+                    ? opt.id === "missed" ? "#fee2e2"
+                    : opt.id === "completed" ? "#dcfce7"
+                    : "#cbe4fc"
+                    : "#ffffff";
+                  const optBorder = opt.id === "missed" ? "#dc2626" : opt.id === "completed" ? "#16a34a" : "#111827";
+                  const optColor = opt.id === "missed" ? "#dc2626" : opt.id === "completed" ? "#16a34a" : "#111827";
 
                   return (
                     <button
@@ -222,34 +230,44 @@ export function TodoList({
                         setIsDropdownOpen(false);
                       }}
                       style={{
-                        width: "160px",
+                        width: "170px",
                         height: "40px",
                         padding: "0 14px",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "space-between",
-                        background: isSelected ? "#cbe4fc" : "#ffffff",
-                        border: "1.5px solid #111827",
+                        background: optBg,
+                        border: `1.5px solid ${optBorder}`,
                         borderRadius: "12px",
                         cursor: "pointer",
                         fontFamily: "'Inter', sans-serif",
                         fontSize: "0.95rem",
                         fontWeight: 500,
-                        color: "#111827",
+                        color: optColor,
                         transition: "background 0.15s ease",
                       }}
                       onMouseEnter={(e) => {
-                        if (!isSelected) {
-                          e.currentTarget.style.backgroundColor = "#f3f4f6";
-                        }
+                        if (!isSelected) e.currentTarget.style.backgroundColor = "#f3f4f6";
                       }}
                       onMouseLeave={(e) => {
-                        if (!isSelected) {
-                          e.currentTarget.style.backgroundColor = "#ffffff";
-                        }
+                        if (!isSelected) e.currentTarget.style.backgroundColor = "#ffffff";
                       }}
                     >
-                      <span>{opt.label}</span>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <span>{opt.label}</span>
+                        {/* Missed badge count in dropdown */}
+                        {opt.id === "missed" && missedCount > 0 && (
+                          <span style={{
+                            background: "#dc2626",
+                            color: "#ffffff",
+                            borderRadius: "9999px",
+                            fontSize: "0.68rem",
+                            fontWeight: 700,
+                            padding: "1px 6px",
+                            lineHeight: 1.4,
+                          }}>{missedCount}</span>
+                        )}
+                      </div>
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
                         {opt.icon}
                       </div>

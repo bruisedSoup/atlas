@@ -38,7 +38,7 @@ class TaskViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         qs = Task.objects.filter(user=self.request.user)
         status_param = self.request.query_params.get("status")
-        now = timezone.now()
+        now = timezone.localtime()
         today = now.date()
         now_time = now.time()
 

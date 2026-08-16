@@ -57,6 +57,7 @@ export function TaskEditModal({
 
   const [color, setColor] = useState<string>("blue");
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   // Submodals
   const [isLabelModalOpen, setIsLabelModalOpen] = useState(false);
@@ -140,6 +141,7 @@ export function TaskEditModal({
     e.preventDefault();
     if (!title.trim()) return;
 
+    setSaveError(null);
     setSaving(true);
     try {
       await onSave({
@@ -155,8 +157,9 @@ export function TaskEditModal({
         color: color,
       } as any);
       onClose();
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to save task:", err);
+      setSaveError(err?.message || "Something went wrong. Please try again.");
     } finally {
       setSaving(false);
     }
@@ -526,6 +529,24 @@ export function TaskEditModal({
                 </>
               )}
             </div>
+
+            {/* Error Message */}
+            {saveError && (
+              <div
+                style={{
+                  background: "#fef2f2",
+                  border: "1.5px solid #fca5a5",
+                  borderRadius: "8px",
+                  padding: "10px 14px",
+                  color: "#b91c1c",
+                  fontSize: "0.8rem",
+                  fontFamily: "'Inter', sans-serif",
+                  marginTop: "6px",
+                }}
+              >
+                {saveError}
+              </div>
+            )}
 
             {/* Yellow Save Button */}
             <button

@@ -19,6 +19,7 @@ export default function DashboardPage() {
   const [statusFilter, setStatusFilter] = useState<FilterStatus>("ongoing");
   const [activeLabelFilter, setActiveLabelFilter] = useState("All");
   const [loading, setLoading] = useState(true);
+  const [missedCount, setMissedCount] = useState(0);
 
   // Modals state
   const [selectedTaskForView, setSelectedTaskForView] = useState<TaskItem | null>(null);
@@ -27,6 +28,22 @@ export default function DashboardPage() {
 
   const { accessToken } = useUser();
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+  // Fetch missed count (always, regardless of current filter)
+  const fetchMissedCount = useCallback(async (tokenOverride?: string) => {
+    const token = tokenOverride || accessToken;
+    if (!token) return;
+    try {
+      const res = await fetch(`${apiUrl}/api/tasks/?status=missed`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const items = Array.isArray(data) ? data : data.results || [];
+        setMissedCount(items.length);
+      }
+    } catch {}
+  }, [accessToken, apiUrl]);
 
   // Fetch Custom Labels
   const fetchCustomLabels = useCallback(async (tokenOverride?: string) => {
@@ -123,6 +140,7 @@ export default function DashboardPage() {
       fetchTasks();
       fetchCourses();
       fetchCustomLabels();
+      fetchMissedCount();
     }
 
     // Subscribe to real-time WebSocket events
@@ -165,7 +183,12 @@ export default function DashboardPage() {
       unsubLabel();
       unsubLabelDel();
     };
-  }, [accessToken, statusFilter, activeLabelFilter, fetchTasks, fetchCourses, fetchCustomLabels]);
+  }, [accessToken, statusFilter, activeLabelFilter, fetchTasks, fetchCourses, fetchCustomLabels, fetchMissedCount]);
+
+  // Refresh missed count whenever tasks change
+  useEffect(() => {
+    if (accessToken) fetchMissedCount();
+  }, [accessToken, tasks, fetchMissedCount]);
 
   // Add Custom Label
   const handleAddCustomLabel = async (name: string) => {
@@ -207,7 +230,9 @@ export default function DashboardPage() {
 
   // Create or Update Task
   const handleSaveTask = async (taskData: Partial<TaskItem>) => {
-    if (!accessToken) return;
+    if (!accessToken) {
+      throw new Error("Not authenticated. Please sign in again.");
+    }
 
     if (taskData.id) {
       // Update
@@ -219,9 +244,12 @@ export default function DashboardPage() {
         },
         body: JSON.stringify(taskData),
       });
-      if (res.ok) {
-        fetchTasks();
+      if (!res.ok) {
+        const body = await res.text();
+        console.error("[Atlas] Task update failed:", res.status, body);
+        throw new Error(`Save failed (${res.status}): ${body}`);
       }
+      fetchTasks();
     } else {
       // Create
       const res = await fetch(`${apiUrl}/api/tasks/`, {
@@ -232,9 +260,12 @@ export default function DashboardPage() {
         },
         body: JSON.stringify(taskData),
       });
-      if (res.ok) {
-        fetchTasks();
+      if (!res.ok) {
+        const body = await res.text();
+        console.error("[Atlas] Task create failed:", res.status, body);
+        throw new Error(`Save failed (${res.status}): ${body}`);
       }
+      fetchTasks();
     }
   };
 
@@ -337,12 +368,16 @@ export default function DashboardPage() {
         <TodoList
           tasks={tasks}
           statusFilter={statusFilter}
-          onStatusFilterChange={setStatusFilter}
+          onStatusFilterChange={(newStatus) => {
+            setLoading(true);
+            setStatusFilter(newStatus);
+          }}
           onAddTask={handleOpenAddModal}
           onTaskClick={(task) => setSelectedTaskForView(task)}
           onCompleteTask={handleCompleteTask}
           onRefresh={fetchTasks}
           loading={loading}
+          missedCount={missedCount}
         />
       </main>
 

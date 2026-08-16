@@ -38,12 +38,12 @@ class TaskViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         qs = Task.objects.filter(user=self.request.user)
         status_param = self.request.query_params.get("status")
+        today = timezone.now().date()
         if status_param == "ongoing":
-            qs = qs.filter(status="ongoing")
+            qs = qs.filter(status="ongoing").exclude(deadline_date__lt=today)
         elif status_param in ["done", "completed"]:
             qs = qs.filter(status__in=["done", "completed"])
         elif status_param == "missed":
-            today = timezone.now().date()
             qs = qs.filter(status="ongoing", deadline_date__lt=today)
         elif status_param:
             qs = qs.filter(status=status_param)

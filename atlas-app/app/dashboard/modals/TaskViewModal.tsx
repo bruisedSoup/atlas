@@ -23,7 +23,6 @@ export function TaskViewModal({
 
   return (
     <div
-      onClick={onClose}
       style={{
         position: "fixed",
         inset: 0,
@@ -36,7 +35,6 @@ export function TaskViewModal({
       }}
     >
       <div
-        onClick={(e) => e.stopPropagation()}
         style={{
           width: "100%",
           maxWidth: "520px",

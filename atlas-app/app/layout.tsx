@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { UserProvider } from "@/app/context/UserContext";
 import { ProfileModal } from "@/app/src/modals/ProfileModal";
+import { NotificationToast } from "@/app/src/components/NotificationToast";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -54,6 +55,7 @@ export default function RootLayout({
         <UserProvider>
           {children}
           <ProfileModal />
+          <NotificationToast />
         </UserProvider>
       </body>
     </html>

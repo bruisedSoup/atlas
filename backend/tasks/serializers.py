@@ -27,6 +27,7 @@ class TaskSerializer(serializers.ModelSerializer):
             "deadline_date",
             "deadline_time",
             "notify_before_deadline",
+            "reminder_sent",
             "color",
             "icon_seed",
             "platform",

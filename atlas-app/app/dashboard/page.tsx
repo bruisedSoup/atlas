@@ -6,6 +6,7 @@ import { HeaderCards } from "./components/HeaderCards";
 import { TodoList, TaskItem } from "./components/TodoList";
 import { TaskViewModal } from "./modals/TaskViewModal";
 import { TaskEditModal } from "./modals/TaskEditModal";
+import { CustomLabelItem } from "./modals/CustomLabelModal";
 import { createClient } from "@/lib/supabase/client";
 
 interface UserProfile {
@@ -21,6 +22,7 @@ export default function DashboardPage() {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [tasks, setTasks] = useState<TaskItem[]>([]);
   const [courses, setCourses] = useState<{ id: string; course_name: string; course_code?: string }[]>([]);
+  const [customLabels, setCustomLabels] = useState<CustomLabelItem[]>([]);
   const [statusFilter, setStatusFilter] = useState<"ongoing" | "done" | "archived">("ongoing");
   const [activeLabelFilter, setActiveLabelFilter] = useState("All");
   const [loading, setLoading] = useState(true);
@@ -80,38 +82,24 @@ export default function DashboardPage() {
     initAuth();
   }, [apiUrl, supabase]);
 
-  // Fetch Tasks
-  const fetchTasks = useCallback(async () => {
+  // Fetch Custom Labels
+  const fetchCustomLabels = useCallback(async () => {
     if (!accessToken) return;
-    setLoading(true);
     try {
-      let url = `${apiUrl}/api/tasks/?status=${statusFilter}`;
-      if (activeLabelFilter !== "All") {
-        if (activeLabelFilter === "Custom") {
-          url += `&label_type=custom`;
-        } else {
-          const matchedCourse = courses.find((c) => c.course_name === activeLabelFilter);
-          if (matchedCourse) {
-            url += `&course=${matchedCourse.id}`;
-          }
-        }
-      }
-
-      const res = await fetch(url, {
+      const res = await fetch(`${apiUrl}/api/tasks/custom-labels/`, {
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
       });
       if (res.ok) {
         const data = await res.json();
-        setTasks(Array.isArray(data) ? data : data.results || []);
+        const items = Array.isArray(data) ? data : data.results || [];
+        setCustomLabels(items);
       }
     } catch (err) {
-      console.error("Failed to fetch tasks:", err);
-    } finally {
-      setLoading(false);
+      console.error("Failed to fetch custom labels:", err);
     }
-  }, [accessToken, apiUrl, statusFilter, activeLabelFilter, courses]);
+  }, [accessToken, apiUrl]);
 
   // Fetch Courses
   const fetchCourses = useCallback(async () => {
@@ -131,12 +119,82 @@ export default function DashboardPage() {
     }
   }, [accessToken, apiUrl]);
 
+  // Fetch Tasks
+  const fetchTasks = useCallback(async () => {
+    if (!accessToken) return;
+    setLoading(true);
+    try {
+      let url = `${apiUrl}/api/tasks/?status=${statusFilter}`;
+      if (activeLabelFilter !== "All") {
+        const matchedCourse = courses.find((c) => c.course_name === activeLabelFilter);
+        if (matchedCourse) {
+          url += `&course=${matchedCourse.id}`;
+        } else {
+          url += `&custom_label=${encodeURIComponent(activeLabelFilter)}`;
+        }
+      }
+
+      const res = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setTasks(Array.isArray(data) ? data : data.results || []);
+      }
+    } catch (err) {
+      console.error("Failed to fetch tasks:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [accessToken, apiUrl, statusFilter, activeLabelFilter, courses]);
+
   useEffect(() => {
     if (accessToken) {
       fetchTasks();
       fetchCourses();
+      fetchCustomLabels();
     }
-  }, [accessToken, fetchTasks, fetchCourses]);
+  }, [accessToken, fetchTasks, fetchCourses, fetchCustomLabels]);
+
+  // Add Custom Label
+  const handleAddCustomLabel = async (name: string) => {
+    if (!accessToken) return;
+    try {
+      const res = await fetch(`${apiUrl}/api/tasks/custom-labels/`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name }),
+      });
+      if (res.ok) {
+        const newLbl = await res.json();
+        setCustomLabels((prev) => [...prev, newLbl]);
+      }
+    } catch (err) {
+      console.error("Failed to create label:", err);
+    }
+  };
+
+  // Delete Custom Label
+  const handleDeleteCustomLabel = async (label: CustomLabelItem) => {
+    if (!accessToken || !label.id) return;
+    setCustomLabels((prev) => prev.filter((l) => l.id !== label.id));
+    try {
+      await fetch(`${apiUrl}/api/tasks/custom-labels/${label.id}/`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+    } catch (err) {
+      console.error("Failed to delete label:", err);
+      fetchCustomLabels();
+    }
+  };
 
   // Create or Update Task
   const handleSaveTask = async (taskData: Partial<TaskItem>) => {
@@ -228,7 +286,7 @@ export default function DashboardPage() {
   };
 
   const customFilterLabels = [
-    "Custom",
+    ...customLabels.map((l) => l.name),
     ...courses.map((c) => c.course_name),
   ];
 
@@ -323,13 +381,16 @@ export default function DashboardPage() {
         onDelete={handleDeleteTask}
       />
 
-      {/* Edit / Add Task Modal (Mockup 4) */}
+      {/* Edit / Add Task Modal (Mockup 4 & Image 1 + 2) */}
       <TaskEditModal
         task={selectedTaskForEdit}
         courses={courses}
+        customLabels={customLabels}
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
         onSave={handleSaveTask}
+        onAddCustomLabel={handleAddCustomLabel}
+        onDeleteCustomLabel={handleDeleteCustomLabel}
       />
     </div>
   );

@@ -51,6 +51,22 @@ export default function DashboardPage() {
 
       setAccessToken(session.access_token);
 
+      const userMeta = session.user.user_metadata || {};
+      const identities = (session.user as any).identities || [];
+      const identityData = identities[0]?.identity_data || {};
+      const googleAvatar =
+        userMeta.avatar_url ||
+        userMeta.picture ||
+        identityData.avatar_url ||
+        identityData.picture ||
+        "";
+      const googleName =
+        userMeta.full_name ||
+        userMeta.name ||
+        identityData.full_name ||
+        identityData.name ||
+        "Isabella Gonzales";
+
       // Fetch Django user profile
       try {
         const res = await fetch(`${apiUrl}/api/auth/session/`, {
@@ -62,22 +78,29 @@ export default function DashboardPage() {
         });
         if (res.ok) {
           const data = await res.json();
-          setUserProfile(data.user);
+          const profile = data.user;
+          if (!profile.avatar_url && googleAvatar) {
+            profile.avatar_url = googleAvatar;
+          }
+          if (!profile.full_name && googleName) {
+            profile.full_name = googleName;
+          }
+          setUserProfile(profile);
         } else {
           // Fallback to session user metadata
           setUserProfile({
             id: session.user.id,
             email: session.user.email || "",
-            full_name: session.user.user_metadata?.full_name || session.user.user_metadata?.name || "Student",
-            avatar_url: session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture || "",
+            full_name: googleName,
+            avatar_url: googleAvatar,
           });
         }
       } catch {
         setUserProfile({
           id: session.user.id,
           email: session.user.email || "",
-          full_name: session.user.user_metadata?.full_name || "Student",
-          avatar_url: "",
+          full_name: googleName,
+          avatar_url: googleAvatar,
         });
       }
     }

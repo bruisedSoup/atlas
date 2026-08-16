@@ -144,10 +144,10 @@ export function HeaderCards({
           minHeight: "155px",
         }}
       >
-        {/* Profile Image / Upload Square */}
+        {/* Profile Image Square (Opens Profile Modal) */}
         <div
-          onClick={() => fileInputRef.current?.click()}
-          title="Click to upload profile photo"
+          onClick={onOpenProfile}
+          title="Click to view profile"
           style={{
             width: "88px",
             height: "88px",
@@ -178,13 +178,6 @@ export function HeaderCards({
               </span>
             </div>
           )}
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handleFileChange}
-            accept="image/*"
-            style={{ display: "none" }}
-          />
         </div>
 
         {/* Greeting, Date, Double Line, Motto & View Profile Button */}

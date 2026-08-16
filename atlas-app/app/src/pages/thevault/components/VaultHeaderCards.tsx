@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { UserProfileCard } from "@/app/components/UserProfileCard";
+import { UserProfileCard } from "@/app/src/components/UserProfileCard";
 
 export type VaultTimeFilter = "All" | "This Week" | "This Month" | "This Semester";
 

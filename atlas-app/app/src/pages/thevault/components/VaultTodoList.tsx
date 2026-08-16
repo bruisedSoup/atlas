@@ -1,8 +1,8 @@
 "use client";
 
 import React from "react";
-import { TaskItem } from "@/app/dashboard/components/TodoList";
-import { PushpinIcon, getRandomPushpinColor } from "@/app/dashboard/components/PushpinIcon";
+import { TaskItem } from "@/app/src/pages/dashboard/components/TodoList";
+import { PushpinIcon, getRandomPushpinColor } from "@/app/src/components/PushpinIcon";
 
 interface VaultTodoListProps {
   tasks: TaskItem[];

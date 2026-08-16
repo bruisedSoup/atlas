@@ -2,7 +2,7 @@
 
 import React from "react";
 import { TaskItem } from "../components/TodoList";
-import { PushpinIcon } from "../components/PushpinIcon";
+import { PushpinIcon } from "@/app/src/components/PushpinIcon";
 
 interface TaskViewModalProps {
   task: TaskItem | null;

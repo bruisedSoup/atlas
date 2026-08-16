@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { PushpinIcon, getRandomPushpinColor } from "./PushpinIcon";
+import { PushpinIcon, getRandomPushpinColor } from "@/app/src/components/PushpinIcon";
 
 export interface TaskItem {
   id: string;

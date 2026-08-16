@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { TaskItem } from "../components/TodoList";
-import { PushpinIcon, PUSHPIN_VARIANTS, getRandomPushpinColor } from "../components/PushpinIcon";
+import { PushpinIcon, PUSHPIN_VARIANTS, getRandomPushpinColor } from "@/app/src/components/PushpinIcon";
 import { CustomLabelModal, CustomLabelItem } from "./CustomLabelModal";
 import { CourseSelectModal } from "./CourseSelectModal";
 import { DatePickerModal } from "./DatePickerModal";
@@ -94,9 +94,9 @@ export function TaskEditModal({
   if (!isOpen) return null;
 
   const cyclePushpinColor = () => {
-    const currentIndex = PUSHPIN_VARIANTS.indexOf(color as any);
-    const nextIndex = (currentIndex + 1) % PUSHPIN_VARIANTS.length;
-    setColor(PUSHPIN_VARIANTS[nextIndex]);
+    const currentIndex = PUSHPIN_VARIANTS.findIndex((v) => v.color === color);
+    const nextIndex = currentIndex >= 0 ? (currentIndex + 1) % PUSHPIN_VARIANTS.length : 0;
+    setColor(PUSHPIN_VARIANTS[nextIndex].color);
   };
 
   // Helper format date for display: e.g. "Aug 13, 2026"

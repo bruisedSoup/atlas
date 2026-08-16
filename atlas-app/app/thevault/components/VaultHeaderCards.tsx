@@ -156,10 +156,10 @@ export function VaultHeaderCards({
           minHeight: "155px",
         }}
       >
-        {/* Avatar Upload Area */}
+        {/* Avatar Square (Opens Profile Modal) */}
         <div
-          onClick={() => fileInputRef.current?.click()}
-          title="Click to upload profile photo"
+          onClick={onOpenProfile}
+          title="Click to view profile"
           style={{
             width: "88px",
             height: "88px",
@@ -194,13 +194,6 @@ export function VaultHeaderCards({
               </span>
             </div>
           )}
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            style={{ display: "none" }}
-            onChange={handleFileChange}
-          />
         </div>
 
         {/* User Info & Motto */}

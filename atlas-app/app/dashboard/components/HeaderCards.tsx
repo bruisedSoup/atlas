@@ -217,14 +217,16 @@ export function HeaderCards({
 
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <span
+              onClick={onOpenProfile}
               style={{
                 fontFamily: "'EB Garamond', Georgia, serif",
                 fontSize: "1.05rem",
                 fontStyle: "italic",
-                color: "#111827",
+                color: bio ? "#111827" : "#9ca3af",
+                cursor: "pointer",
               }}
             >
-              {bio ? `“${bio}”` : "“Carpi diem”"}
+              {bio ? `“${bio}”` : "“Add user bio”"}
             </span>
 
             <button

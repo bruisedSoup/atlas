@@ -72,21 +72,32 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
             profile.full_name = googleName;
           }
           setUserProfile(profile);
+          try {
+            localStorage.setItem("atlas_user_profile", JSON.stringify(profile));
+          } catch {}
         } else {
-          setUserProfile({
+          const fallbackProfile = {
             id: sessionUser?.id,
             email: sessionUser?.email || "",
             full_name: googleName,
             avatar_url: googleAvatar,
-          });
+          };
+          setUserProfile(fallbackProfile);
+          try {
+            localStorage.setItem("atlas_user_profile", JSON.stringify(fallbackProfile));
+          } catch {}
         }
       } catch {
-        setUserProfile({
+        const fallbackProfile = {
           id: sessionUser?.id,
           email: sessionUser?.email || "",
           full_name: googleName,
           avatar_url: googleAvatar,
-        });
+        };
+        setUserProfile(fallbackProfile);
+        try {
+          localStorage.setItem("atlas_user_profile", JSON.stringify(fallbackProfile));
+        } catch {}
       } finally {
         setLoading(false);
       }
@@ -95,6 +106,14 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   );
 
   useEffect(() => {
+    // 0ms instant render from cache
+    try {
+      const cached = localStorage.getItem("atlas_user_profile");
+      if (cached) {
+        setUserProfile(JSON.parse(cached));
+      }
+    } catch {}
+
     async function initAuth() {
       const {
         data: { session },
@@ -116,7 +135,13 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     if (!accessToken) return;
 
     // Optimistically update everywhere in real-time
-    setUserProfile((prev) => (prev ? { ...prev, ...updated } : { ...updated }));
+    setUserProfile((prev) => {
+      const next = prev ? { ...prev, ...updated } : { ...updated };
+      try {
+        localStorage.setItem("atlas_user_profile", JSON.stringify(next));
+      } catch {}
+      return next;
+    });
 
     try {
       const res = await fetch(`${apiUrl}/api/users/profile/`, {
@@ -132,6 +157,9 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         const data = await res.json();
         if (data.user) {
           setUserProfile(data.user);
+          try {
+            localStorage.setItem("atlas_user_profile", JSON.stringify(data.user));
+          } catch {}
         }
       }
     } catch (err) {

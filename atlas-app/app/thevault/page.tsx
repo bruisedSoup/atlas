@@ -6,6 +6,7 @@ import { TaskItem } from "@/app/dashboard/components/TodoList";
 import { VaultHeaderCards, VaultTimeFilter } from "./components/VaultHeaderCards";
 import { VaultTodoList } from "./components/VaultTodoList";
 import { VaultTaskViewModal } from "./modals/VaultTaskViewModal";
+import { ProfileModal, UserProfileData } from "./modals/ProfileModal";
 import { createClient } from "@/lib/supabase/client";
 
 interface UserProfile {
@@ -13,6 +14,7 @@ interface UserProfile {
   email: string;
   full_name: string;
   avatar_url: string;
+  bio?: string;
 }
 
 export default function TheVaultPage() {
@@ -23,6 +25,7 @@ export default function TheVaultPage() {
   const [loading, setLoading] = useState(true);
   const [accessToken, setAccessToken] = useState<string>("");
   const [selectedTaskForView, setSelectedTaskForView] = useState<TaskItem | null>(null);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
   const supabase = createClient();
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -97,6 +100,33 @@ export default function TheVaultPage() {
       fetchCompletedTasks();
     }
   }, [accessToken, fetchCompletedTasks]);
+
+  // Save User Profile (Bio, Name, Avatar)
+  const handleSaveProfile = async (updated: Partial<UserProfileData>) => {
+    if (!accessToken) return;
+
+    // Optimistically update
+    setUserProfile((prev) => (prev ? { ...prev, ...updated } : null));
+
+    try {
+      const res = await fetch(`${apiUrl}/api/users/profile/`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(updated),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.user) {
+          setUserProfile(data.user);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to save profile:", err);
+    }
+  };
 
   // Restore Task to Work Hub
   const handleRestoreTask = async (taskId: string) => {
@@ -207,9 +237,11 @@ export default function TheVaultPage() {
         <VaultHeaderCards
           userName={userProfile?.full_name || "Isabella Gonzales"}
           avatarUrl={userProfile?.avatar_url || ""}
+          bio={userProfile?.bio || ""}
           completedCount={completedTasks.length}
           activeTimeFilter={activeTimeFilter}
           onTimeFilterChange={setActiveTimeFilter}
+          onOpenProfile={() => setIsProfileModalOpen(true)}
         />
 
         {/* The Vault Completed Tasks List */}
@@ -229,6 +261,14 @@ export default function TheVaultPage() {
         onClose={() => setSelectedTaskForView(null)}
         onRestore={handleRestoreTask}
         onDelete={handleDeleteTask}
+      />
+
+      {/* Profile Modal */}
+      <ProfileModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+        profile={userProfile}
+        onSaveProfile={handleSaveProfile}
       />
     </div>
   );

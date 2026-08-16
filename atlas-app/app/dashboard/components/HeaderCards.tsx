@@ -5,23 +5,27 @@ import React, { useRef } from "react";
 interface HeaderCardsProps {
   userName?: string;
   avatarUrl?: string;
+  bio?: string;
   onAvatarUpload?: (file: File) => void;
+  onOpenProfile?: () => void;
   activeFilter?: string;
   onFilterChange?: (filter: string) => void;
   customLabels?: string[];
 }
 
 export function HeaderCards({
-  userName = "User Name",
+  userName = "Isabella Gonzales",
   avatarUrl = "",
+  bio = "",
   onAvatarUpload,
+  onOpenProfile = () => {},
   activeFilter = "All",
   onFilterChange = () => {},
   customLabels = [],
 }: HeaderCardsProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Format today's date (e.g. "Thursday, August 13")
+  // Format today's date (e.g. "Sunday, August 16")
   const today = new Date();
   const dateFormatted = today.toLocaleDateString("en-US", {
     weekday: "long",
@@ -40,7 +44,7 @@ export function HeaderCards({
       style={{
         display: "grid",
         gridTemplateColumns: "1fr 1fr",
-        gap: "20px",
+        gap: "24px",
         marginBottom: "24px",
       }}
     >
@@ -55,7 +59,7 @@ export function HeaderCards({
           display: "flex",
           flexDirection: "column",
           justifyContent: "space-between",
-          minHeight: "150px",
+          minHeight: "155px",
         }}
       >
         <div>
@@ -67,16 +71,16 @@ export function HeaderCards({
               <line x1="8" y1="14" x2="16" y2="14" />
               <line x1="8" y1="18" x2="12" y2="18" />
             </svg>
-            <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: "1.25rem", fontWeight: 600, color: "#111827" }}>
+            <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: "1.3rem", fontWeight: 600, color: "#111827", margin: 0 }}>
               Work Hub
             </h2>
           </div>
-          <p style={{ fontSize: "0.8rem", color: "#9ca3af", marginBottom: "16px" }}>
+          <p style={{ fontSize: "0.85rem", color: "#6b7280", margin: "0 0 12px 0", fontFamily: "'Inter', sans-serif" }}>
             Your active deliverables
           </p>
 
           {/* Underline separator */}
-          <div style={{ display: "flex", gap: "10px", marginBottom: "16px" }}>
+          <div style={{ display: "flex", gap: "10px", marginBottom: "14px" }}>
             <div style={{ height: "1px", background: "#e5e7eb", flex: 1 }} />
             <div style={{ height: "1px", background: "#e5e7eb", flex: 1 }} />
             <div style={{ height: "1px", background: "#e5e7eb", flex: 1 }} />
@@ -89,12 +93,13 @@ export function HeaderCards({
           <button
             onClick={() => onFilterChange("All")}
             style={{
-              padding: "4px 16px",
+              height: "30px",
+              padding: "0 16px",
               borderRadius: "6px",
               background: activeFilter === "All" ? "#18181b" : "#f4f4f5",
               color: activeFilter === "All" ? "#ffffff" : "#52525b",
               border: "none",
-              fontSize: "0.8rem",
+              fontSize: "0.825rem",
               fontWeight: 500,
               cursor: "pointer",
               transition: "background 0.15s ease",
@@ -107,12 +112,13 @@ export function HeaderCards({
               key={lbl}
               onClick={() => onFilterChange(lbl)}
               style={{
-                padding: "4px 14px",
+                height: "30px",
+                padding: "0 14px",
                 borderRadius: "6px",
                 background: activeFilter === lbl ? "#18181b" : "#f4f4f5",
                 color: activeFilter === lbl ? "#ffffff" : "#52525b",
                 border: "none",
-                fontSize: "0.8rem",
+                fontSize: "0.825rem",
                 fontWeight: 500,
                 cursor: "pointer",
                 transition: "background 0.15s ease",
@@ -124,18 +130,18 @@ export function HeaderCards({
         </div>
       </div>
 
-      {/* Right Card: User Greeting */}
+      {/* Right Card: User Greeting Profile matching mockup */}
       <div
         style={{
           background: "#ffffff",
           borderRadius: "14px",
           border: "1px solid #e5e7eb",
-          padding: "24px 28px",
-          boxShadow: "0 2px 8px -2px rgba(0,0,0,0.03)",
+          padding: "20px 24px",
           display: "flex",
           alignItems: "center",
-          gap: "24px",
-          minHeight: "150px",
+          gap: "22px",
+          boxShadow: "0 2px 8px -2px rgba(0,0,0,0.03)",
+          minHeight: "155px",
         }}
       >
         {/* Profile Image / Upload Square */}
@@ -143,10 +149,10 @@ export function HeaderCards({
           onClick={() => fileInputRef.current?.click()}
           title="Click to upload profile photo"
           style={{
-            width: "96px",
-            height: "96px",
+            width: "88px",
+            height: "88px",
             borderRadius: "12px",
-            border: "1px solid #d1d5db",
+            border: "1.5px solid #374151",
             background: "#fafafa",
             display: "flex",
             flexDirection: "column",
@@ -161,14 +167,16 @@ export function HeaderCards({
           {avatarUrl ? (
             <img src={avatarUrl} alt={userName} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           ) : (
-            <>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <div style={{ textAlign: "center", padding: "4px" }}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ margin: "0 auto" }}>
                 <rect x="3" y="3" width="18" height="18" rx="2" />
                 <circle cx="8.5" cy="8.5" r="1.5" />
                 <polyline points="21 15 16 10 5 21" />
               </svg>
-              <span style={{ fontSize: "0.65rem", color: "#9ca3af", marginTop: "4px" }}>upload image</span>
-            </>
+              <span style={{ fontSize: "0.65rem", color: "#6b7280", marginTop: "2px", display: "block" }}>
+                upload image
+              </span>
+            </div>
           )}
           <input
             type="file"
@@ -179,24 +187,66 @@ export function HeaderCards({
           />
         </div>
 
-        {/* Greeting and Date */}
-        <div>
-          <h1
+        {/* Greeting, Date, Double Line, Motto & View Profile Button */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <h2
             style={{
               fontFamily: "'EB Garamond', Georgia, serif",
-              fontSize: "1.75rem",
+              fontSize: "1.65rem",
               fontStyle: "italic",
               fontWeight: 500,
               color: "#111827",
-              lineHeight: 1.2,
-              marginBottom: "6px",
+              margin: 0,
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
             }}
           >
             Hello, {userName}
-          </h1>
-          <p style={{ fontSize: "0.85rem", color: "#6b7280", fontWeight: 400 }}>
+          </h2>
+
+          <p style={{ fontSize: "0.85rem", color: "#4b5563", margin: "3px 0 10px 0" }}>
             {dateFormatted}
           </p>
+
+          {/* Double line border */}
+          <div style={{ marginBottom: "10px" }}>
+            <div style={{ height: "1.5px", background: "#4b5563", marginBottom: "2px" }} />
+            <div style={{ height: "1.5px", background: "#4b5563" }} />
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <span
+              style={{
+                fontFamily: "'EB Garamond', Georgia, serif",
+                fontSize: "1.05rem",
+                fontStyle: "italic",
+                color: "#111827",
+              }}
+            >
+              {bio ? `“${bio}”` : "“Carpi diem”"}
+            </span>
+
+            <button
+              type="button"
+              onClick={onOpenProfile}
+              style={{
+                borderRadius: "14px",
+                border: "1.5px solid #111827",
+                background: "#ffffff",
+                padding: "2px 14px",
+                fontSize: "0.75rem",
+                fontFamily: "'Inter', sans-serif",
+                fontWeight: 500,
+                color: "#111827",
+                cursor: "pointer",
+                boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
+                transition: "all 0.15s ease",
+              }}
+            >
+              View Profile
+            </button>
+          </div>
         </div>
       </div>
     </div>

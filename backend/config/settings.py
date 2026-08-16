@@ -116,7 +116,7 @@ if _database_url:
             "PASSWORD": _parsed.password,
             "HOST": _parsed.hostname,
             "PORT": _parsed.port or 5432,
-            "CONN_MAX_AGE": 60,  # Keep connections open 60s; avoids hitting pooler max (15 connections)
+            "CONN_MAX_AGE": 0,  # Transaction pooler: don't persist connections
         }
     }
 else:

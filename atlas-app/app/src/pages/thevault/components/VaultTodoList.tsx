@@ -3,6 +3,7 @@
 import React from "react";
 import { TaskItem } from "@/app/src/pages/dashboard/components/TodoList";
 import { PushpinIcon, getRandomPushpinColor } from "@/app/src/components/PushpinIcon";
+import { TodoListSkeleton } from "@/app/src/components/Skeleton";
 
 interface VaultTodoListProps {
   tasks: TaskItem[];
@@ -91,11 +92,9 @@ export function VaultTodoList({
         </button>
       </div>
 
-      {/* Task List or Empty State */}
+      {/* Task List or Skeleton / Empty State */}
       {loading ? (
-        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "#9ca3af" }}>
-          Loading vault archives…
-        </div>
+        <TodoListSkeleton count={4} isVault={true} />
       ) : tasks.length === 0 ? (
         <div
           style={{

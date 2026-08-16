@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { TaskItem } from "../components/TodoList";
-import { PushpinIcon, PUSHPIN_COLORS, getRandomPushpinColor } from "../components/PushpinIcon";
+import { PushpinIcon, PUSHPIN_VARIANTS, getRandomPushpinColor } from "../components/PushpinIcon";
 
 interface CourseOption {
   id: string;
@@ -33,7 +33,7 @@ export function TaskEditModal({
   const [hasDeadline, setHasDeadline] = useState(false);
   const [deadlineDate, setDeadlineDate] = useState("");
   const [deadlineTime, setDeadlineTime] = useState("");
-  const [color, setColor] = useState("#60a5fa");
+  const [color, setColor] = useState<string>("blue");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -44,7 +44,7 @@ export function TaskEditModal({
       setDescription(task.description || "");
       setHasDeadline(!!task.deadline_date);
       setDeadlineDate(task.deadline_date || "");
-      setDeadlineTime(task.deadline_time || "");
+      setDeadlineTime(task.deadline_time || "18:00");
       setColor(task.color || getRandomPushpinColor(task.id));
     } else {
       // New task defaults
@@ -52,7 +52,7 @@ export function TaskEditModal({
       setLabelType("custom");
       setSelectedCourse("");
       setDescription("");
-      setHasDeadline(false);
+      setHasDeadline(true);
       setDeadlineDate(new Date().toISOString().split("T")[0]);
       setDeadlineTime("18:00");
       setColor(getRandomPushpinColor());
@@ -60,6 +60,12 @@ export function TaskEditModal({
   }, [task, isOpen]);
 
   if (!isOpen) return null;
+
+  const cyclePushpinColor = () => {
+    const currentIndex = PUSHPIN_VARIANTS.indexOf(color as any);
+    const nextIndex = (currentIndex + 1) % PUSHPIN_VARIANTS.length;
+    setColor(PUSHPIN_VARIANTS[nextIndex]);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -105,17 +111,16 @@ export function TaskEditModal({
         onClick={(e) => e.stopPropagation()}
         style={{
           width: "100%",
-          maxWidth: "580px",
+          maxWidth: "540px",
           background: "#ffffff",
           borderRadius: "14px",
           padding: "28px 36px 32px",
           boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1)",
           position: "relative",
-          animation: "modalFadeIn 0.15s ease-out",
         }}
       >
         {/* Top Bar: Back Button & Title */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
           <button
             type="button"
             onClick={onClose}
@@ -126,6 +131,7 @@ export function TaskEditModal({
               borderRadius: "16px",
               padding: "4px 16px",
               fontSize: "0.85rem",
+              fontFamily: "'Inter', sans-serif",
               fontWeight: 500,
               cursor: "pointer",
             }}
@@ -136,7 +142,7 @@ export function TaskEditModal({
           <h2
             style={{
               fontFamily: "'EB Garamond', Georgia, serif",
-              fontSize: "1.65rem",
+              fontSize: "1.75rem",
               fontStyle: "italic",
               fontWeight: 500,
               color: "#111827",
@@ -149,30 +155,18 @@ export function TaskEditModal({
           </h2>
         </div>
 
-        {/* Center Pushpin */}
-        <div style={{ display: "flex", justifyContent: "center", marginBottom: "16px" }}>
-          <PushpinIcon color={color} size={48} />
-        </div>
-
-        {/* Color Palette Selector for Pushpin */}
-        <div style={{ display: "flex", justifyContent: "center", gap: "8px", marginBottom: "16px" }}>
-          {PUSHPIN_COLORS.map((c) => (
-            <div
-              key={c}
-              onClick={() => setColor(c)}
-              title="Select pushpin color"
-              style={{
-                width: "18px",
-                height: "18px",
-                borderRadius: "50%",
-                background: c,
-                cursor: "pointer",
-                border: color === c ? "2px solid #111827" : "1px solid #e5e7eb",
-                transform: color === c ? "scale(1.2)" : "scale(1)",
-                transition: "all 0.15s ease",
-              }}
-            />
-          ))}
+        {/* Center Pushpin PNG (Click to cycle colors) */}
+        <div
+          onClick={cyclePushpinColor}
+          title="Click to cycle pushpin color"
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            marginBottom: "18px",
+            cursor: "pointer",
+          }}
+        >
+          <PushpinIcon color={color} size={54} />
         </div>
 
         {/* Double Line Border */}
@@ -184,7 +178,7 @@ export function TaskEditModal({
         <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
           {/* Task Name Field */}
           <div>
-            <label style={{ display: "block", fontSize: "0.85rem", color: "#374151", marginBottom: "6px" }}>
+            <label style={{ display: "block", fontSize: "0.85rem", color: "#1f2937", marginBottom: "6px", fontFamily: "'Inter', sans-serif" }}>
               Task
             </label>
             <input
@@ -199,8 +193,10 @@ export function TaskEditModal({
                 padding: "0 14px",
                 borderRadius: "8px",
                 border: "1.5px solid #4b5563",
-                fontSize: "0.9rem",
-                fontFamily: "'Inter', sans-serif",
+                background: "#ffffff",
+                fontSize: "0.95rem",
+                fontFamily: "'EB Garamond', Georgia, serif",
+                color: "#111827",
                 outline: "none",
               }}
             />
@@ -208,7 +204,7 @@ export function TaskEditModal({
 
           {/* Label Type (Custom vs Course) */}
           <div>
-            <label style={{ display: "block", fontSize: "0.85rem", color: "#374151", marginBottom: "6px" }}>
+            <label style={{ display: "block", fontSize: "0.85rem", color: "#1f2937", marginBottom: "6px", fontFamily: "'Inter', sans-serif" }}>
               Label
             </label>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
@@ -221,7 +217,8 @@ export function TaskEditModal({
                   border: "1.5px solid #4b5563",
                   background: labelType === "custom" ? "#fbcfe8" : "#ffffff",
                   color: "#111827",
-                  fontSize: "0.875rem",
+                  fontFamily: "'EB Garamond', Georgia, serif",
+                  fontSize: "0.95rem",
                   fontWeight: 500,
                   cursor: "pointer",
                   transition: "background 0.15s ease",
@@ -239,7 +236,8 @@ export function TaskEditModal({
                   border: "1.5px solid #4b5563",
                   background: labelType === "course" ? "#fbcfe8" : "#ffffff",
                   color: "#111827",
-                  fontSize: "0.875rem",
+                  fontFamily: "'EB Garamond', Georgia, serif",
+                  fontSize: "0.95rem",
                   fontWeight: 500,
                   cursor: "pointer",
                   transition: "background 0.15s ease",
@@ -262,8 +260,10 @@ export function TaskEditModal({
                   borderRadius: "8px",
                   border: "1.5px solid #4b5563",
                   background: "#ffffff",
-                  fontSize: "0.85rem",
+                  fontSize: "0.9rem",
+                  fontFamily: "'EB Garamond', Georgia, serif",
                   outline: "none",
+                  color: "#111827",
                 }}
               >
                 <option value="">Select a course…</option>
@@ -278,7 +278,7 @@ export function TaskEditModal({
 
           {/* Description Field (Pink Tinted Background) */}
           <div>
-            <label style={{ display: "block", fontSize: "0.85rem", color: "#374151", marginBottom: "6px" }}>
+            <label style={{ display: "block", fontSize: "0.85rem", color: "#1f2937", marginBottom: "6px", fontFamily: "'Inter', sans-serif" }}>
               Description
             </label>
             <textarea
@@ -292,8 +292,9 @@ export function TaskEditModal({
                 borderRadius: "8px",
                 border: "1.5px solid #4b5563",
                 background: "#fff1f2",
-                fontSize: "0.9rem",
-                fontFamily: "'Inter', sans-serif",
+                fontSize: "0.95rem",
+                fontFamily: "'EB Garamond', Georgia, serif",
+                color: "#111827",
                 outline: "none",
                 resize: "none",
               }}
@@ -303,7 +304,9 @@ export function TaskEditModal({
           {/* Deadline Row + Green Toggle Switch */}
           <div>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px" }}>
-              <label style={{ fontSize: "0.85rem", color: "#374151" }}>Deadline</label>
+              <label style={{ fontSize: "0.85rem", color: "#1f2937", fontFamily: "'Inter', sans-serif" }}>
+                Deadline
+              </label>
 
               {/* Green Toggle Switch */}
               <div
@@ -350,8 +353,8 @@ export function TaskEditModal({
                       borderRadius: "8px",
                       border: "1.5px solid #4b5563",
                       background: "#ffffff",
-                      fontSize: "0.9rem",
-                      fontFamily: "'Inter', sans-serif",
+                      fontSize: "0.95rem",
+                      fontFamily: "'EB Garamond', Georgia, serif",
                       outline: "none",
                       color: "#111827",
                     }}
@@ -368,15 +371,15 @@ export function TaskEditModal({
                       borderRadius: "8px",
                       border: "1.5px solid #4b5563",
                       background: "#ffffff",
-                      fontSize: "0.9rem",
-                      fontFamily: "'Inter', sans-serif",
+                      fontSize: "0.95rem",
+                      fontFamily: "'EB Garamond', Georgia, serif",
                       outline: "none",
                       color: "#111827",
                     }}
                   />
                 </div>
 
-                <p style={{ fontSize: "0.725rem", color: "#9ca3af" }}>
+                <p style={{ fontSize: "0.725rem", color: "#9ca3af", fontFamily: "'Inter', sans-serif" }}>
                   You will be notified before the deadline
                 </p>
               </>
@@ -389,8 +392,8 @@ export function TaskEditModal({
             disabled={saving}
             style={{
               width: "100%",
-              height: "44px",
-              marginTop: "8px",
+              height: "42px",
+              marginTop: "6px",
               background: "#facc15",
               color: "#111827",
               border: "1.5px solid #4b5563",

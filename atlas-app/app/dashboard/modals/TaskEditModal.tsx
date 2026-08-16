@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { TaskItem } from "../components/TodoList";
 import { PushpinIcon, PUSHPIN_VARIANTS, getRandomPushpinColor } from "../components/PushpinIcon";
 import { CustomLabelModal, CustomLabelItem } from "./CustomLabelModal";
+import { CourseSelectModal } from "./CourseSelectModal";
 import { DatePickerModal } from "./DatePickerModal";
 import { TimePickerModal } from "./TimePickerModal";
 
@@ -52,6 +53,7 @@ export function TaskEditModal({
 
   // Submodals
   const [isLabelModalOpen, setIsLabelModalOpen] = useState(false);
+  const [isCourseModalOpen, setIsCourseModalOpen] = useState(false);
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [isTimePickerOpen, setIsTimePickerOpen] = useState(false);
 
@@ -121,6 +123,11 @@ export function TaskEditModal({
       return timeStr;
     }
   };
+
+  const selectedCourseObj = courses.find((c) => c.id === selectedCourse);
+  const selectedCourseName = selectedCourseObj
+    ? `${selectedCourseObj.course_name}${selectedCourseObj.course_code ? ` (${selectedCourseObj.course_code})` : ""}`
+    : "";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -302,7 +309,7 @@ export function TaskEditModal({
                 </button>
               </div>
 
-              {/* If Custom: Select a label dropdown input (Image 1) -> Opens CustomLabelModal (Image 2) */}
+              {/* If Custom: Select a label box -> Opens CustomLabelModal */}
               {labelType === "custom" && (
                 <div
                   onClick={() => setIsLabelModalOpen(true)}
@@ -332,31 +339,34 @@ export function TaskEditModal({
                 </div>
               )}
 
-              {/* If Course: Course Selector Dropdown */}
+              {/* If Course: Select a course box -> Opens CourseSelectModal */}
               {labelType === "course" && (
-                <select
-                  value={selectedCourse}
-                  onChange={(e) => setSelectedCourse(e.target.value)}
+                <div
+                  onClick={() => setIsCourseModalOpen(true)}
                   style={{
                     width: "100%",
                     height: "38px",
-                    padding: "0 12px",
+                    padding: "0 14px",
                     borderRadius: "8px",
                     border: "1.5px solid #4b5563",
                     background: "#ffffff",
-                    fontSize: "0.9rem",
-                    fontFamily: "'EB Garamond', Georgia, serif",
-                    outline: "none",
-                    color: "#111827",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    cursor: "pointer",
                   }}
                 >
-                  <option value="">Select a registered course…</option>
-                  {courses.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.course_name} {c.course_code ? `(${c.course_code})` : ""}
-                    </option>
-                  ))}
-                </select>
+                  <span
+                    style={{
+                      fontFamily: "'EB Garamond', Georgia, serif",
+                      fontSize: "0.95rem",
+                      color: selectedCourseName ? "#111827" : "#9ca3af",
+                    }}
+                  >
+                    {selectedCourseName || "Select a registered course"}
+                  </span>
+                  <span style={{ fontSize: "0.8rem", color: "#6b7280" }}>v</span>
+                </div>
               )}
             </div>
 
@@ -536,7 +546,7 @@ export function TaskEditModal({
         </div>
       </div>
 
-      {/* Submodal 1: Custom Label Modal (Image 2) */}
+      {/* Submodal 1: Custom Label Modal */}
       <CustomLabelModal
         isOpen={isLabelModalOpen}
         onClose={() => setIsLabelModalOpen(false)}
@@ -547,7 +557,16 @@ export function TaskEditModal({
         onDeleteLabel={onDeleteCustomLabel}
       />
 
-      {/* Submodal 2: Date Picker Modal */}
+      {/* Submodal 2: Course Select Modal */}
+      <CourseSelectModal
+        isOpen={isCourseModalOpen}
+        onClose={() => setIsCourseModalOpen(false)}
+        courses={courses}
+        selectedCourseId={selectedCourse}
+        onSelectCourse={(id) => setSelectedCourse(id)}
+      />
+
+      {/* Submodal 3: Date Picker Modal */}
       <DatePickerModal
         isOpen={isDatePickerOpen}
         onClose={() => setIsDatePickerOpen(false)}
@@ -555,7 +574,7 @@ export function TaskEditModal({
         onSelectDate={(d) => setDeadlineDate(d)}
       />
 
-      {/* Submodal 3: Time Picker Modal */}
+      {/* Submodal 4: Time Picker Modal */}
       <TimePickerModal
         isOpen={isTimePickerOpen}
         onClose={() => setIsTimePickerOpen(false)}

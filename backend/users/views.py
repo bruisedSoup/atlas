@@ -6,11 +6,15 @@ POST /api/auth/session/
   The SupabaseJWTAuthentication backend verifies the token and upserts the
   User row — by the time this view runs, request.user is already populated.
   Returns the user's profile so the frontend can confirm identity.
+
+GET/PATCH /api/users/profile/
+  Fetches or updates the user profile (full_name, bio, avatar_url).
 """
 
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework import status
 
 from .serializers import UserSerializer
 
@@ -24,3 +28,20 @@ def session_view(request):
     """
     serializer = UserSerializer(request.user)
     return Response({"user": serializer.data})
+
+
+@api_view(["GET", "PATCH", "PUT"])
+@permission_classes([IsAuthenticated])
+def profile_view(request):
+    """
+    Retrieve or update the authenticated user's profile.
+    """
+    if request.method == "GET":
+        serializer = UserSerializer(request.user)
+        return Response({"user": serializer.data})
+
+    serializer = UserSerializer(request.user, data=request.data, partial=True)
+    if serializer.is_valid():
+        serializer.save()
+        return Response({"user": serializer.data})
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

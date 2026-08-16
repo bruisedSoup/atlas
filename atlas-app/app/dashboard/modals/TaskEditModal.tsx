@@ -41,10 +41,10 @@ export function TaskEditModal({
   const [selectedCustomLabel, setSelectedCustomLabel] = useState<string>("");
   const [selectedCourse, setSelectedCourse] = useState<string>("");
 
-  const [hasDescription, setHasDescription] = useState(true);
+  const [hasDescription, setHasDescription] = useState(false);
   const [description, setDescription] = useState("");
 
-  const [hasDeadline, setHasDeadline] = useState(true);
+  const [hasDeadline, setHasDeadline] = useState(false);
   const [deadlineDate, setDeadlineDate] = useState("");
   const [deadlineTime, setDeadlineTime] = useState("");
 
@@ -70,14 +70,14 @@ export function TaskEditModal({
       setDeadlineTime(task.deadline_time || "18:00");
       setColor(task.color || getRandomPushpinColor(task.id));
     } else {
-      // New task defaults matching Image 1
+      // New task defaults (toggles off by default)
       setTitle("");
       setLabelType("custom");
       setSelectedCustomLabel("");
       setSelectedCourse("");
-      setHasDescription(true);
+      setHasDescription(false);
       setDescription("");
-      setHasDeadline(true);
+      setHasDeadline(false);
       setDeadlineDate(new Date().toISOString().split("T")[0]);
       setDeadlineTime("18:00");
       setColor(getRandomPushpinColor());

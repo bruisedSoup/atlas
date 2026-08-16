@@ -115,16 +115,28 @@ export function TaskViewModal({
         )}
 
         {task.deadline_date && (
-          <p
-            style={{
-              textAlign: "center",
-              fontSize: "0.8rem",
-              color: "#6b7280",
-              marginBottom: "16px",
-            }}
-          >
-            ⏰ Due: {task.deadline_date} {task.deadline_time ? `at ${task.deadline_time}` : ""}
-          </p>
+          <div style={{ textAlign: "center", marginBottom: "16px" }}>
+            <p
+              style={{
+                fontSize: "0.875rem",
+                color: "#374151",
+                marginBottom: "4px",
+                fontWeight: 500,
+              }}
+            >
+              ⏰ Due: {task.deadline_date} {task.deadline_time ? `at ${task.deadline_time}` : ""}
+            </p>
+            <p
+              style={{
+                fontSize: "0.75rem",
+                color: "#9ca3af",
+                margin: 0,
+                fontFamily: "'Inter', sans-serif",
+              }}
+            >
+              You will be notified 15 minutes before the deadline
+            </p>
+          </div>
         )}
 
         {/* Bottom Double Line Border */}

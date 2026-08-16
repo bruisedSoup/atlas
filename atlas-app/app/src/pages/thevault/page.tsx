@@ -19,11 +19,24 @@ export default function TheVaultPage() {
   const { accessToken } = useUser();
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
+  useEffect(() => {
+    // 0ms instant cache load
+    try {
+      const cached = localStorage.getItem("atlas_cached_vault_tasks");
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setCompletedTasks(parsed);
+          setLoading(false);
+        }
+      }
+    } catch {}
+  }, []);
+
   // Fetch Completed Tasks
   const fetchCompletedTasks = useCallback(async (tokenOverride?: string) => {
     const token = tokenOverride || accessToken;
     if (!token) return;
-    setLoading(true);
     try {
       const res = await fetch(`${apiUrl}/api/tasks/?status=done`, {
         headers: {
@@ -32,7 +45,11 @@ export default function TheVaultPage() {
       });
       if (res.ok) {
         const data = await res.json();
-        setCompletedTasks(Array.isArray(data) ? data : data.results || []);
+        const items = Array.isArray(data) ? data : data.results || [];
+        setCompletedTasks(items);
+        try {
+          localStorage.setItem("atlas_cached_vault_tasks", JSON.stringify(items));
+        } catch {}
       }
     } catch (err) {
       console.error("Failed to fetch completed tasks:", err);

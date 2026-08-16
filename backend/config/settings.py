@@ -116,6 +116,7 @@ if _database_url:
             "PASSWORD": _parsed.password,
             "HOST": _parsed.hostname,
             "PORT": _parsed.port or 5432,
+            "CONN_MAX_AGE": 600,
         }
     }
 else:

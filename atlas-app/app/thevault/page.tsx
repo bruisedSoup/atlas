@@ -1,103 +1,22 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { Sidebar } from "@/app/dashboard/components/Sidebar";
+import { Sidebar } from "@/app/components/Sidebar";
 import { TaskItem } from "@/app/dashboard/components/TodoList";
 import { VaultHeaderCards, VaultTimeFilter } from "./components/VaultHeaderCards";
 import { VaultTodoList } from "./components/VaultTodoList";
 import { VaultTaskViewModal } from "./modals/VaultTaskViewModal";
-import { ProfileModal, UserProfileData } from "./modals/ProfileModal";
-import { createClient } from "@/lib/supabase/client";
-
-interface UserProfile {
-  id: string;
-  email: string;
-  full_name: string;
-  avatar_url: string;
-  bio?: string;
-}
+import { useUser } from "@/app/context/UserContext";
 
 export default function TheVaultPage() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [completedTasks, setCompletedTasks] = useState<TaskItem[]>([]);
   const [activeTimeFilter, setActiveTimeFilter] = useState<VaultTimeFilter>("All");
   const [loading, setLoading] = useState(true);
-  const [accessToken, setAccessToken] = useState<string>("");
   const [selectedTaskForView, setSelectedTaskForView] = useState<TaskItem | null>(null);
-  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
-  const supabase = createClient();
+  const { accessToken } = useUser();
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-
-  // Initial Auth & Profile Fetch
-  useEffect(() => {
-    async function initAuth() {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        const astroUrl = process.env.NEXT_PUBLIC_ASTRO_URL || "http://localhost:4321";
-        window.location.href = `${astroUrl}/signin`;
-        return;
-      }
-
-      setAccessToken(session.access_token);
-
-      const userMeta = session.user.user_metadata || {};
-      const identities = (session.user as any).identities || [];
-      const identityData = identities[0]?.identity_data || {};
-      const googleAvatar =
-        userMeta.avatar_url ||
-        userMeta.picture ||
-        identityData.avatar_url ||
-        identityData.picture ||
-        "";
-      const googleName =
-        userMeta.full_name ||
-        userMeta.name ||
-        identityData.full_name ||
-        identityData.name ||
-        "Isabella Gonzales";
-
-      try {
-        const res = await fetch(`${apiUrl}/api/auth/session/`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-            "Content-Type": "application/json",
-          },
-        });
-        if (res.ok) {
-          const data = await res.json();
-          const profile = data.user;
-          if (!profile.avatar_url && googleAvatar) {
-            profile.avatar_url = googleAvatar;
-          }
-          if (!profile.full_name && googleName) {
-            profile.full_name = googleName;
-          }
-          setUserProfile(profile);
-        } else {
-          setUserProfile({
-            id: session.user.id,
-            email: session.user.email || "",
-            full_name: googleName,
-            avatar_url: googleAvatar,
-          });
-        }
-      } catch {
-        setUserProfile({
-          id: session.user.id,
-          email: session.user.email || "",
-          full_name: googleName,
-          avatar_url: googleAvatar,
-        });
-      }
-
-      fetchCompletedTasks(session.access_token);
-    }
-
-    initAuth();
-  }, [apiUrl, supabase]);
 
   // Fetch Completed Tasks
   const fetchCompletedTasks = useCallback(async (tokenOverride?: string) => {
@@ -126,33 +45,6 @@ export default function TheVaultPage() {
       fetchCompletedTasks();
     }
   }, [accessToken, fetchCompletedTasks]);
-
-  // Save User Profile (Bio, Name, Avatar)
-  const handleSaveProfile = async (updated: Partial<UserProfileData>) => {
-    if (!accessToken) return;
-
-    // Optimistically update
-    setUserProfile((prev) => (prev ? { ...prev, ...updated } : null));
-
-    try {
-      const res = await fetch(`${apiUrl}/api/users/profile/`, {
-        method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(updated),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.user) {
-          setUserProfile(data.user);
-        }
-      }
-    } catch (err) {
-      console.error("Failed to save profile:", err);
-    }
-  };
 
   // Restore Task to Work Hub
   const handleRestoreTask = async (taskId: string) => {
@@ -259,15 +151,11 @@ export default function TheVaultPage() {
           width: "100%",
         }}
       >
-        {/* The Vault Header Cards */}
+        {/* The Vault Header Cards (with global UserProfileCard) */}
         <VaultHeaderCards
-          userName={userProfile?.full_name || "Isabella Gonzales"}
-          avatarUrl={userProfile?.avatar_url || ""}
-          bio={userProfile?.bio || ""}
           completedCount={completedTasks.length}
           activeTimeFilter={activeTimeFilter}
           onTimeFilterChange={setActiveTimeFilter}
-          onOpenProfile={() => setIsProfileModalOpen(true)}
         />
 
         {/* The Vault Completed Tasks List */}
@@ -287,14 +175,6 @@ export default function TheVaultPage() {
         onClose={() => setSelectedTaskForView(null)}
         onRestore={handleRestoreTask}
         onDelete={handleDeleteTask}
-      />
-
-      {/* Profile Modal */}
-      <ProfileModal
-        isOpen={isProfileModalOpen}
-        onClose={() => setIsProfileModalOpen(false)}
-        profile={userProfile}
-        onSaveProfile={handleSaveProfile}
       />
     </div>
   );

@@ -114,8 +114,14 @@ export function TaskViewModal({
           </p>
         )}
 
+        {/* Bottom Double Line Border (above Due section) */}
+        <div style={{ marginTop: "20px", marginBottom: "20px" }}>
+          <div style={{ height: "1.5px", background: "#4b5563", marginBottom: "3px" }} />
+          <div style={{ height: "1.5px", background: "#4b5563" }} />
+        </div>
+
         {task.deadline_date && (
-          <div style={{ textAlign: "center", marginBottom: "16px" }}>
+          <div style={{ textAlign: "center", marginBottom: "24px" }}>
             <p
               style={{
                 fontSize: "0.875rem",
@@ -138,12 +144,6 @@ export function TaskViewModal({
             </p>
           </div>
         )}
-
-        {/* Bottom Double Line Border */}
-        <div style={{ marginTop: "16px", marginBottom: "28px" }}>
-          <div style={{ height: "1.5px", background: "#4b5563", marginBottom: "3px" }} />
-          <div style={{ height: "1.5px", background: "#4b5563" }} />
-        </div>
 
         {/* Action Buttons: Edit / Delete */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>

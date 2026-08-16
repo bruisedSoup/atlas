@@ -130,24 +130,24 @@ export function VaultTaskViewModal({
           </p>
         )}
 
+        {/* Bottom Double Line Border (above Due section) */}
+        <div style={{ marginTop: "20px", marginBottom: "20px" }}>
+          <div style={{ height: "1.5px", background: "#4b5563", marginBottom: "3px" }} />
+          <div style={{ height: "1.5px", background: "#4b5563" }} />
+        </div>
+
         {task.deadline_date && (
           <p
             style={{
               textAlign: "center",
               fontSize: "0.85rem",
               color: "#6b7280",
-              marginBottom: "16px",
+              marginBottom: "24px",
             }}
           >
             ⏰ Due date was: {task.deadline_date} {task.deadline_time ? `at ${task.deadline_time}` : ""}
           </p>
         )}
-
-        {/* Bottom Double Line Border */}
-        <div style={{ marginTop: "16px", marginBottom: "28px" }}>
-          <div style={{ height: "1.5px", background: "#4b5563", marginBottom: "3px" }} />
-          <div style={{ height: "1.5px", background: "#4b5563" }} />
-        </div>
 
         {/* Action Buttons: Restore / Delete Permanently */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>

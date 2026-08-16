@@ -521,7 +521,7 @@ export function TaskEditModal({
                   </div>
 
                   <p style={{ fontSize: "0.725rem", color: "#9ca3af", fontFamily: "'Inter', sans-serif" }}>
-                    You will be notified before the deadline
+                    You will be notified 15 minutes before the deadline
                   </p>
                 </>
               )}

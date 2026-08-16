@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { PushpinIcon, getRandomPushpinColor } from "@/app/src/components/PushpinIcon";
+import { TodoListSkeleton } from "@/app/src/components/Skeleton";
 
 export interface TaskItem {
   id: string;
@@ -310,11 +311,9 @@ export function TodoList({
         </div>
       </div>
 
-      {/* Task List or Empty State */}
+      {/* Task List or Skeleton / Empty State */}
       {loading ? (
-        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "#9ca3af" }}>
-          Loading deliverables…
-        </div>
+        <TodoListSkeleton count={4} />
       ) : tasks.length === 0 ? (
         <div
           style={{

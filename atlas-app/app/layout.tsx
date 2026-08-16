@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { UserProvider } from "@/app/context/UserContext";
+import { ProfileModal } from "@/app/modals/ProfileModal";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -48,7 +50,12 @@ export default function RootLayout({
         <meta name="theme-color" content="#000000" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
       </head>
-      <body>{children}</body>
+      <body>
+        <UserProvider>
+          {children}
+          <ProfileModal />
+        </UserProvider>
+      </body>
     </html>
   );
 }

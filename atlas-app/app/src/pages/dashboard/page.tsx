@@ -8,6 +8,7 @@ import { TaskViewModal } from "./modals/TaskViewModal";
 import { TaskEditModal } from "./modals/TaskEditModal";
 import { CustomLabelItem } from "./modals/CustomLabelModal";
 import { useUser } from "@/app/context/UserContext";
+import { realtimeService } from "@/app/src/services/realtime";
 
 export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState("work-hub");
@@ -104,7 +105,48 @@ export default function DashboardPage() {
       fetchCourses();
       fetchCustomLabels();
     }
-  }, [accessToken, statusFilter, activeLabelFilter]);
+
+    // Subscribe to real-time WebSocket events
+    const unsubTaskCreated = realtimeService.on("TASK_CREATED", (msg) => {
+      if (msg.payload) {
+        setTasks((prev) => {
+          if (prev.some((t) => t.id === msg.payload.id)) return prev;
+          if (statusFilter === "ongoing" && msg.payload.status === "ongoing") {
+            return [msg.payload, ...prev];
+          }
+          return prev;
+        });
+      }
+    });
+
+    const unsubTaskUpdated = realtimeService.on("TASK_UPDATED", (msg) => {
+      if (msg.payload) {
+        setTasks((prev) => {
+          if (msg.payload.status === "done" && statusFilter === "ongoing") {
+            return prev.filter((t) => t.id !== msg.payload.id);
+          }
+          return prev.map((t) => (t.id === msg.payload.id ? { ...t, ...msg.payload } : t));
+        });
+      }
+    });
+
+    const unsubTaskDeleted = realtimeService.on("TASK_DELETED", (msg) => {
+      if (msg.payload?.id) {
+        setTasks((prev) => prev.filter((t) => t.id !== msg.payload.id));
+      }
+    });
+
+    const unsubLabel = realtimeService.on("LABEL_CREATED", () => fetchCustomLabels());
+    const unsubLabelDel = realtimeService.on("LABEL_DELETED", () => fetchCustomLabels());
+
+    return () => {
+      unsubTaskCreated();
+      unsubTaskUpdated();
+      unsubTaskDeleted();
+      unsubLabel();
+      unsubLabelDel();
+    };
+  }, [accessToken, statusFilter, activeLabelFilter, fetchTasks, fetchCourses, fetchCustomLabels]);
 
   // Add Custom Label
   const handleAddCustomLabel = async (name: string) => {

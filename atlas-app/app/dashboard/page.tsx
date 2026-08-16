@@ -103,18 +103,24 @@ export default function DashboardPage() {
           avatar_url: googleAvatar,
         });
       }
+
+      // Fetch immediately on session initialization
+      fetchTasks(session.access_token);
+      fetchCourses(session.access_token);
+      fetchCustomLabels(session.access_token);
     }
 
     initAuth();
   }, [apiUrl, supabase]);
 
   // Fetch Custom Labels
-  const fetchCustomLabels = useCallback(async () => {
-    if (!accessToken) return;
+  const fetchCustomLabels = useCallback(async (tokenOverride?: string) => {
+    const token = tokenOverride || accessToken;
+    if (!token) return;
     try {
       const res = await fetch(`${apiUrl}/api/tasks/custom-labels/`, {
         headers: {
-          Authorization: `Bearer ${accessToken}`,
+          Authorization: `Bearer ${token}`,
         },
       });
       if (res.ok) {
@@ -128,12 +134,13 @@ export default function DashboardPage() {
   }, [accessToken, apiUrl]);
 
   // Fetch Courses
-  const fetchCourses = useCallback(async () => {
-    if (!accessToken) return;
+  const fetchCourses = useCallback(async (tokenOverride?: string) => {
+    const token = tokenOverride || accessToken;
+    if (!token) return;
     try {
       const res = await fetch(`${apiUrl}/api/courses/`, {
         headers: {
-          Authorization: `Bearer ${accessToken}`,
+          Authorization: `Bearer ${token}`,
         },
       });
       if (res.ok) {
@@ -146,8 +153,9 @@ export default function DashboardPage() {
   }, [accessToken, apiUrl]);
 
   // Fetch Tasks
-  const fetchTasks = useCallback(async () => {
-    if (!accessToken) return;
+  const fetchTasks = useCallback(async (tokenOverride?: string) => {
+    const token = tokenOverride || accessToken;
+    if (!token) return;
     setLoading(true);
     try {
       let url = `${apiUrl}/api/tasks/?status=${statusFilter}`;
@@ -162,7 +170,7 @@ export default function DashboardPage() {
 
       const res = await fetch(url, {
         headers: {
-          Authorization: `Bearer ${accessToken}`,
+          Authorization: `Bearer ${token}`,
         },
       });
       if (res.ok) {
@@ -178,16 +186,9 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (accessToken) {
-      fetchCourses();
-      fetchCustomLabels();
-    }
-  }, [accessToken, fetchCourses, fetchCustomLabels]);
-
-  useEffect(() => {
-    if (accessToken) {
       fetchTasks();
     }
-  }, [accessToken, fetchTasks]);
+  }, [accessToken, statusFilter, activeLabelFilter]);
 
   // Add Custom Label
   const handleAddCustomLabel = async (name: string) => {

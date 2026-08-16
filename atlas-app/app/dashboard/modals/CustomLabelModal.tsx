@@ -17,6 +17,8 @@ interface CustomLabelModalProps {
   onDeleteLabel: (label: CustomLabelItem) => Promise<void> | void;
 }
 
+const DEFAULT_PRESET_LABELS = ["heh", "clearance", "+1", "gamedev"];
+
 export function CustomLabelModal({
   isOpen,
   onClose,
@@ -28,9 +30,15 @@ export function CustomLabelModal({
 }: CustomLabelModalProps) {
   const [isEditMode, setIsEditMode] = useState(false);
   const [newLabelText, setNewLabelText] = useState("");
-  const [currentSelected, setCurrentSelected] = useState(selectedLabel);
+  const [currentSelected, setCurrentSelected] = useState(selectedLabel || "heh");
 
   if (!isOpen) return null;
+
+  // Use user labels or fallback to initial presets from mockup
+  const displayLabels: CustomLabelItem[] =
+    labels.length > 0
+      ? labels
+      : DEFAULT_PRESET_LABELS.map((name) => ({ name }));
 
   const handleAdd = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -62,27 +70,27 @@ export function CustomLabelModal({
         padding: "16px",
       }}
     >
-      {/* Outer Glowing / Warm Frame matching Image 2 */}
+      {/* Outer Thick Yellow Glow Frame (matching Image 2) */}
       <div
         style={{
           width: "100%",
-          maxWidth: "340px",
-          backgroundColor: "#fef9c3", // Yellow light glow outer border
-          borderRadius: "28px",
-          padding: "10px",
-          boxShadow: "0 20px 30px rgba(0,0,0,0.15)",
+          maxWidth: "360px",
+          backgroundColor: "#fef08a", // Vibrant light yellow outer rim
+          borderRadius: "36px",
+          padding: "14px",
+          boxShadow: "0 20px 35px rgba(0,0,0,0.18)",
         }}
       >
-        {/* Inner Card */}
+        {/* Inner Card with Pink Dashed Border */}
         <div
           style={{
             backgroundColor: "#ffffff",
-            borderRadius: "20px",
+            borderRadius: "24px",
             padding: "20px 22px 24px",
-            border: "1.5px dashed #fde047",
+            border: "1.5px dashed #f472b6", // Pink dashed line inside yellow frame
           }}
         >
-          {/* Header: Edit Link (left) & Confirm Button (right) */}
+          {/* Header Row: Edit Link (left) & Confirm Button (right) */}
           <div
             style={{
               display: "flex",
@@ -98,12 +106,12 @@ export function CustomLabelModal({
                 background: "none",
                 border: "none",
                 fontFamily: "'Inter', sans-serif",
-                fontSize: "0.95rem",
+                fontSize: "1rem",
                 fontWeight: 600,
                 color: "#111827",
                 textDecoration: "underline",
                 cursor: "pointer",
-                padding: "2px 4px",
+                padding: "2px 0",
               }}
             >
               {isEditMode ? "Done" : "Edit"}
@@ -115,14 +123,14 @@ export function CustomLabelModal({
               style={{
                 background: "#ffffff",
                 border: "1.5px solid #111827",
-                borderRadius: "16px",
-                padding: "4px 18px",
+                borderRadius: "20px",
+                padding: "4px 20px",
                 fontFamily: "'Inter', sans-serif",
-                fontSize: "0.85rem",
+                fontSize: "0.9rem",
                 fontWeight: 600,
                 color: "#111827",
                 cursor: "pointer",
-                boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+                boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
                 transition: "all 0.15s ease",
               }}
             >
@@ -130,8 +138,20 @@ export function CustomLabelModal({
             </button>
           </div>
 
-          {/* New Label Input Form */}
-          <form onSubmit={handleAdd} style={{ position: "relative", marginBottom: "14px" }}>
+          {/* Solid Line Above New Label Input */}
+          <div style={{ height: "1.5px", backgroundColor: "#374151", marginBottom: "8px" }} />
+
+          {/* New Label Input Form (Clean transparent line between borders) */}
+          <form
+            onSubmit={handleAdd}
+            style={{
+              position: "relative",
+              display: "flex",
+              alignItems: "center",
+              height: "36px",
+              marginBottom: "8px",
+            }}
+          >
             <input
               type="text"
               placeholder="New label"
@@ -139,11 +159,11 @@ export function CustomLabelModal({
               onChange={(e) => setNewLabelText(e.target.value)}
               style={{
                 width: "100%",
-                height: "36px",
-                padding: "0 34px 0 10px",
+                height: "100%",
+                padding: "0 32px 0 2px",
                 border: "none",
-                borderBottom: "1.5px solid #4b5563",
-                fontSize: "0.95rem",
+                background: "transparent",
+                fontSize: "1rem",
                 fontFamily: "'Inter', sans-serif",
                 color: "#111827",
                 outline: "none",
@@ -151,98 +171,97 @@ export function CustomLabelModal({
             />
             <button
               type="submit"
-              title="Add new label"
+              title="Add label"
               style={{
                 position: "absolute",
-                right: "4px",
-                top: "6px",
+                right: "0px",
+                top: "2px",
                 background: "none",
                 border: "none",
-                fontSize: "1.25rem",
+                fontSize: "1.45rem",
+                fontWeight: 300,
                 color: "#9ca3af",
                 cursor: "pointer",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
+                padding: "0 4px",
               }}
             >
               +
             </button>
           </form>
 
-          {/* Label List with Dashed Cyan Horizontal Lines */}
+          {/* Solid Line Below New Label Input */}
+          <div style={{ height: "1.5px", backgroundColor: "#374151", marginBottom: "4px" }} />
+
+          {/* Label Items List separated by Dashed Light-Blue Lines */}
           <div
             style={{
-              maxHeight: "220px",
+              maxHeight: "240px",
               overflowY: "auto",
               display: "flex",
               flexDirection: "column",
             }}
           >
-            {labels.length === 0 ? (
-              <p style={{ fontSize: "0.85rem", color: "#9ca3af", textAlign: "center", padding: "16px 0" }}>
-                No custom labels yet. Add one above!
-              </p>
-            ) : (
-              labels.map((lbl, idx) => {
-                const isSelected = currentSelected === lbl.name;
-                return (
-                  <div
-                    key={lbl.id || lbl.name || idx}
+            {displayLabels.map((lbl, idx) => {
+              const isSelected = currentSelected === lbl.name;
+
+              return (
+                <div
+                  key={lbl.id || lbl.name || idx}
+                  onClick={() => {
+                    if (!isEditMode) {
+                      setCurrentSelected(lbl.name);
+                    }
+                  }}
+                  style={{
+                    borderBottom: "1.5px dashed #93c5fd", // Light blue dashed separator
+                    padding: "12px 2px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    cursor: "pointer",
+                    backgroundColor: isSelected ? "#eff6ff" : "transparent",
+                    transition: "background 0.15s ease",
+                  }}
+                >
+                  <span
                     style={{
-                      borderBottom: "1.5px dashed #93c5fd",
-                      padding: "10px 4px",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      cursor: "pointer",
-                      backgroundColor: isSelected ? "#eff6ff" : "transparent",
-                      borderRadius: isSelected ? "6px" : "0",
-                      transition: "background 0.15s ease",
-                    }}
-                    onClick={() => {
-                      if (!isEditMode) {
-                        setCurrentSelected(lbl.name);
-                      }
+                      fontFamily: "'Inter', sans-serif",
+                      fontSize: "1rem",
+                      fontWeight: isSelected ? 600 : 500,
+                      color: isSelected ? "#1d4ed8" : "#111827",
                     }}
                   >
-                    <span
+                    {lbl.name}
+                  </span>
+
+                  {/* Edit mode: Delete cross button */}
+                  {isEditMode ? (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDeleteLabel(lbl);
+                      }}
                       style={{
-                        fontFamily: "'Inter', sans-serif",
-                        fontSize: "0.95rem",
-                        fontWeight: isSelected ? 600 : 500,
-                        color: isSelected ? "#1d4ed8" : "#1f2937",
+                        background: "none",
+                        border: "none",
+                        color: "#ef4444",
+                        fontSize: "1.1rem",
+                        cursor: "pointer",
+                        padding: "0 4px",
                       }}
                     >
-                      {lbl.name}
-                    </span>
-
-                    {/* Edit mode: Delete button */}
-                    {isEditMode ? (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onDeleteLabel(lbl);
-                        }}
-                        style={{
-                          background: "none",
-                          border: "none",
-                          color: "#ef4444",
-                          fontSize: "1rem",
-                          cursor: "pointer",
-                          padding: "2px 6px",
-                        }}
-                      >
-                        ✕
-                      </button>
-                    ) : isSelected ? (
-                      <span style={{ color: "#1d4ed8", fontSize: "0.9rem" }}>✓</span>
-                    ) : null}
-                  </div>
-                );
-              })
-            )}
+                      ✕
+                    </button>
+                  ) : isSelected ? (
+                    <span style={{ color: "#1d4ed8", fontSize: "0.95rem", fontWeight: 700 }}>✓</span>
+                  ) : null}
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>

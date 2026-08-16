@@ -7,6 +7,7 @@ import { TodoList, TaskItem, FilterStatus } from "./components/TodoList";
 import { TaskViewModal } from "./modals/TaskViewModal";
 import { TaskEditModal } from "./modals/TaskEditModal";
 import { CustomLabelItem } from "./modals/CustomLabelModal";
+import { ProfileModal, UserProfileData } from "./modals/ProfileModal";
 import { createClient } from "@/lib/supabase/client";
 
 interface UserProfile {
@@ -14,6 +15,7 @@ interface UserProfile {
   email: string;
   full_name: string;
   avatar_url: string;
+  bio?: string;
 }
 
 export default function DashboardPage() {
@@ -32,6 +34,7 @@ export default function DashboardPage() {
   const [selectedTaskForView, setSelectedTaskForView] = useState<TaskItem | null>(null);
   const [selectedTaskForEdit, setSelectedTaskForEdit] = useState<TaskItem | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
   const supabase = createClient();
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -290,6 +293,33 @@ export default function DashboardPage() {
     setIsEditModalOpen(true);
   };
 
+  // Save User Profile (Bio, Name, Avatar)
+  const handleSaveProfile = async (updated: Partial<UserProfileData>) => {
+    if (!accessToken) return;
+
+    // Optimistically update
+    setUserProfile((prev) => (prev ? { ...prev, ...updated } : null));
+
+    try {
+      const res = await fetch(`${apiUrl}/api/users/profile/`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(updated),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.user) {
+          setUserProfile(data.user);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to save profile:", err);
+    }
+  };
+
   const customFilterLabels = [
     ...customLabels.map((l) => l.name),
     ...courses.map((c) => c.course_name),
@@ -324,10 +354,12 @@ export default function DashboardPage() {
       >
         {activeTab === "work-hub" && (
           <>
-            {/* Header Cards (Work Hub Filters + User Greeting) */}
+            {/* Header Cards (Work Hub Filters + User Greeting with dynamic Bio) */}
             <HeaderCards
               userName={userProfile?.full_name || "Isabella Gonzales"}
               avatarUrl={userProfile?.avatar_url || ""}
+              bio={userProfile?.bio || ""}
+              onOpenProfile={() => setIsProfileModalOpen(true)}
               activeFilter={activeLabelFilter}
               onFilterChange={setActiveLabelFilter}
               customLabels={customFilterLabels}
@@ -396,6 +428,14 @@ export default function DashboardPage() {
         onSave={handleSaveTask}
         onAddCustomLabel={handleAddCustomLabel}
         onDeleteCustomLabel={handleDeleteCustomLabel}
+      />
+
+      {/* Profile Modal */}
+      <ProfileModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+        profile={userProfile}
+        onSaveProfile={handleSaveProfile}
       />
     </div>
   );

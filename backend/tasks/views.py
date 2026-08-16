@@ -1,7 +1,9 @@
 from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
+from django.utils import timezone
 from .models import Task, CustomLabel
 from .serializers import TaskSerializer, CustomLabelSerializer
+from realtime.events import broadcast_to_user
 
 
 class CustomLabelViewSet(viewsets.ModelViewSet):
@@ -12,10 +14,22 @@ class CustomLabelViewSet(viewsets.ModelViewSet):
         return CustomLabel.objects.filter(user=self.request.user)
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        instance = serializer.save(user=self.request.user)
+        broadcast_to_user(
+            self.request.user.id,
+            "LABEL_CREATED",
+            CustomLabelSerializer(instance).data,
+        )
 
+    def perform_destroy(self, instance):
+        label_id = instance.id
+        instance.delete()
+        broadcast_to_user(
+            self.request.user.id,
+            "LABEL_DELETED",
+            {"id": str(label_id)},
+        )
 
-from django.utils import timezone
 
 class TaskViewSet(viewsets.ModelViewSet):
     serializer_class = TaskSerializer
@@ -46,4 +60,26 @@ class TaskViewSet(viewsets.ModelViewSet):
         return qs
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        instance = serializer.save(user=self.request.user)
+        broadcast_to_user(
+            self.request.user.id,
+            "TASK_CREATED",
+            TaskSerializer(instance).data,
+        )
+
+    def perform_update(self, serializer):
+        instance = serializer.save()
+        broadcast_to_user(
+            self.request.user.id,
+            "TASK_UPDATED",
+            TaskSerializer(instance).data,
+        )
+
+    def perform_destroy(self, instance):
+        task_id = instance.id
+        instance.delete()
+        broadcast_to_user(
+            self.request.user.id,
+            "TASK_DELETED",
+            {"id": str(task_id)},
+        )

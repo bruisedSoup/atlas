@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 interface SidebarProps {
@@ -16,6 +17,7 @@ export function Sidebar({
   collapsed = false,
   onToggleCollapse = () => {},
 }: SidebarProps) {
+  const router = useRouter();
   const supabase = createClient();
 
   const handleSignOut = async () => {
@@ -185,13 +187,8 @@ export function Sidebar({
               <button
                 key={item.id}
                 onClick={() => {
-                  if (item.id === "the-vault") {
-                    window.location.href = "/thevault";
-                    return;
-                  }
-                  if (item.id === "work-hub") {
-                    window.location.href = "/dashboard";
-                    return;
+                  if (item.href) {
+                    router.push(item.href);
                   }
                   onTabChange(item.id);
                 }}

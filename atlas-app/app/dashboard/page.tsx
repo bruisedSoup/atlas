@@ -1,117 +1,31 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { Sidebar } from "./components/Sidebar";
+import { Sidebar } from "@/app/components/Sidebar";
 import { HeaderCards } from "./components/HeaderCards";
 import { TodoList, TaskItem, FilterStatus } from "./components/TodoList";
 import { TaskViewModal } from "./modals/TaskViewModal";
 import { TaskEditModal } from "./modals/TaskEditModal";
 import { CustomLabelItem } from "./modals/CustomLabelModal";
-import { ProfileModal, UserProfileData } from "./modals/ProfileModal";
-import { createClient } from "@/lib/supabase/client";
-
-interface UserProfile {
-  id: string;
-  email: string;
-  full_name: string;
-  avatar_url: string;
-  bio?: string;
-}
+import { useUser } from "@/app/context/UserContext";
 
 export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState("work-hub");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [tasks, setTasks] = useState<TaskItem[]>([]);
   const [courses, setCourses] = useState<{ id: string; course_name: string; course_code?: string }[]>([]);
   const [customLabels, setCustomLabels] = useState<CustomLabelItem[]>([]);
   const [statusFilter, setStatusFilter] = useState<FilterStatus>("ongoing");
   const [activeLabelFilter, setActiveLabelFilter] = useState("All");
   const [loading, setLoading] = useState(true);
-  const [accessToken, setAccessToken] = useState<string>("");
 
   // Modals state
   const [selectedTaskForView, setSelectedTaskForView] = useState<TaskItem | null>(null);
   const [selectedTaskForEdit, setSelectedTaskForEdit] = useState<TaskItem | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
-  const supabase = createClient();
+  const { accessToken } = useUser();
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-
-  // Initial Auth & Profile Fetch
-  useEffect(() => {
-    async function initAuth() {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        const astroUrl = process.env.NEXT_PUBLIC_ASTRO_URL || "http://localhost:4321";
-        window.location.href = `${astroUrl}/signin`;
-        return;
-      }
-
-      setAccessToken(session.access_token);
-
-      const userMeta = session.user.user_metadata || {};
-      const identities = (session.user as any).identities || [];
-      const identityData = identities[0]?.identity_data || {};
-      const googleAvatar =
-        userMeta.avatar_url ||
-        userMeta.picture ||
-        identityData.avatar_url ||
-        identityData.picture ||
-        "";
-      const googleName =
-        userMeta.full_name ||
-        userMeta.name ||
-        identityData.full_name ||
-        identityData.name ||
-        "Isabella Gonzales";
-
-      // Fetch Django user profile
-      try {
-        const res = await fetch(`${apiUrl}/api/auth/session/`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-            "Content-Type": "application/json",
-          },
-        });
-        if (res.ok) {
-          const data = await res.json();
-          const profile = data.user;
-          if (!profile.avatar_url && googleAvatar) {
-            profile.avatar_url = googleAvatar;
-          }
-          if (!profile.full_name && googleName) {
-            profile.full_name = googleName;
-          }
-          setUserProfile(profile);
-        } else {
-          // Fallback to session user metadata
-          setUserProfile({
-            id: session.user.id,
-            email: session.user.email || "",
-            full_name: googleName,
-            avatar_url: googleAvatar,
-          });
-        }
-      } catch {
-        setUserProfile({
-          id: session.user.id,
-          email: session.user.email || "",
-          full_name: googleName,
-          avatar_url: googleAvatar,
-        });
-      }
-
-      // Fetch immediately on session initialization
-      fetchTasks(session.access_token);
-      fetchCourses(session.access_token);
-      fetchCustomLabels(session.access_token);
-    }
-
-    initAuth();
-  }, [apiUrl, supabase]);
 
   // Fetch Custom Labels
   const fetchCustomLabels = useCallback(async (tokenOverride?: string) => {
@@ -187,6 +101,8 @@ export default function DashboardPage() {
   useEffect(() => {
     if (accessToken) {
       fetchTasks();
+      fetchCourses();
+      fetchCustomLabels();
     }
   }, [accessToken, statusFilter, activeLabelFilter]);
 
@@ -317,33 +233,6 @@ export default function DashboardPage() {
     setIsEditModalOpen(true);
   };
 
-  // Save User Profile (Bio, Name, Avatar)
-  const handleSaveProfile = async (updated: Partial<UserProfileData>) => {
-    if (!accessToken) return;
-
-    // Optimistically update
-    setUserProfile((prev) => (prev ? { ...prev, ...updated } : null));
-
-    try {
-      const res = await fetch(`${apiUrl}/api/users/profile/`, {
-        method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(updated),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.user) {
-          setUserProfile(data.user);
-        }
-      }
-    } catch (err) {
-      console.error("Failed to save profile:", err);
-    }
-  };
-
   const customFilterLabels = [
     ...customLabels.map((l) => l.name),
     ...courses.map((c) => c.course_name),
@@ -378,12 +267,8 @@ export default function DashboardPage() {
       >
         {activeTab === "work-hub" && (
           <>
-            {/* Header Cards (Work Hub Filters + User Greeting with dynamic Bio) */}
+            {/* Header Cards (Work Hub Filters + Global User Profile Card) */}
             <HeaderCards
-              userName={userProfile?.full_name || "Isabella Gonzales"}
-              avatarUrl={userProfile?.avatar_url || ""}
-              bio={userProfile?.bio || ""}
-              onOpenProfile={() => setIsProfileModalOpen(true)}
               activeFilter={activeLabelFilter}
               onFilterChange={setActiveLabelFilter}
               customLabels={customFilterLabels}
@@ -433,7 +318,7 @@ export default function DashboardPage() {
         )}
       </main>
 
-      {/* View Task Modal (Mockup 3) */}
+      {/* View Task Modal */}
       <TaskViewModal
         task={selectedTaskForView}
         isOpen={!!selectedTaskForView}
@@ -442,7 +327,7 @@ export default function DashboardPage() {
         onDelete={handleDeleteTask}
       />
 
-      {/* Edit / Add Task Modal (Mockup 4 & Image 1 + 2) */}
+      {/* Edit / Add Task Modal */}
       <TaskEditModal
         task={selectedTaskForEdit}
         courses={courses}
@@ -452,14 +337,6 @@ export default function DashboardPage() {
         onSave={handleSaveTask}
         onAddCustomLabel={handleAddCustomLabel}
         onDeleteCustomLabel={handleDeleteCustomLabel}
-      />
-
-      {/* Profile Modal */}
-      <ProfileModal
-        isOpen={isProfileModalOpen}
-        onClose={() => setIsProfileModalOpen(false)}
-        profile={userProfile}
-        onSaveProfile={handleSaveProfile}
       />
     </div>
   );

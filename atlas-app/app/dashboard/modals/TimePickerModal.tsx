@@ -31,6 +31,7 @@ function WheelColumn<T extends string | number>({
   const isDragging = useRef(false);
   const startY = useRef(0);
   const startScrollTop = useRef(0);
+  const hasMoved = useRef(false);
   const isUserScrolling = useRef(false);
   const scrollTimeout = useRef<NodeJS.Timeout | null>(null);
 
@@ -83,44 +84,54 @@ function WheelColumn<T extends string | number>({
     }, 100);
   };
 
-  // Mouse Drag Support
-  const handleMouseDown = (e: React.MouseEvent) => {
+  // Pointer Drag Support (Mouse click & drag + Touch drag)
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     isDragging.current = true;
+    hasMoved.current = false;
     startY.current = e.clientY;
     if (containerRef.current) {
       startScrollTop.current = containerRef.current.scrollTop;
+      try {
+        e.currentTarget.setPointerCapture(e.pointerId);
+      } catch {}
     }
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseup", handleMouseUp);
   };
 
-  const handleMouseMove = (e: MouseEvent) => {
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!isDragging.current || !containerRef.current) return;
     const deltaY = e.clientY - startY.current;
+    if (Math.abs(deltaY) > 3) {
+      hasMoved.current = true;
+    }
     containerRef.current.scrollTop = startScrollTop.current - deltaY;
   };
 
-  const handleMouseUp = () => {
+  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!isDragging.current) return;
     isDragging.current = false;
-    window.removeEventListener("mousemove", handleMouseMove);
-    window.removeEventListener("mouseup", handleMouseUp);
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {}
     snapToNearest();
   };
 
-  // Wheel listener
-  const handleWheel = (e: React.WheelEvent) => {
-    if (!containerRef.current) return;
-    containerRef.current.scrollTop += e.deltaY * 0.4;
-    handleScroll();
+  const handlePointerCancel = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDragging.current) return;
+    isDragging.current = false;
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {}
+    snapToNearest();
   };
 
   return (
     <div
       ref={containerRef}
       onScroll={handleScroll}
-      onWheel={handleWheel}
-      onMouseDown={handleMouseDown}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerCancel}
       style={{
         width,
         height: `${ITEM_HEIGHT * VISIBLE_COUNT}px`,
@@ -130,6 +141,8 @@ function WheelColumn<T extends string | number>({
         scrollbarWidth: "none",
         msOverflowStyle: "none",
         userSelect: "none",
+        WebkitUserSelect: "none",
+        touchAction: "none",
         cursor: "grab",
       }}
     >
@@ -140,7 +153,7 @@ function WheelColumn<T extends string | number>({
       `}</style>
 
       {/* Top Padding so first item can reach center */}
-      <div style={{ height: `${ITEM_HEIGHT * 2}px` }} />
+      <div style={{ height: `${ITEM_HEIGHT * 2}px`, pointerEvents: "none" }} />
 
       {items.map((item, idx) => {
         const isSelected = item === selectedItem;
@@ -152,8 +165,10 @@ function WheelColumn<T extends string | number>({
           <div
             key={String(item)}
             onClick={() => {
-              onSelect(item);
-              scrollToSelected(idx, true);
+              if (!hasMoved.current) {
+                onSelect(item);
+                scrollToSelected(idx, true);
+              }
             }}
             style={{
               height: `${ITEM_HEIGHT}px`,
@@ -169,6 +184,7 @@ function WheelColumn<T extends string | number>({
               transform: `scale(${scale})`,
               transition: "opacity 0.15s ease, transform 0.15s ease, color 0.15s ease",
               cursor: "pointer",
+              userSelect: "none",
             }}
           >
             {renderItem ? renderItem(item) : item}
@@ -177,7 +193,7 @@ function WheelColumn<T extends string | number>({
       })}
 
       {/* Bottom Padding so last item can reach center */}
-      <div style={{ height: `${ITEM_HEIGHT * 2}px` }} />
+      <div style={{ height: `${ITEM_HEIGHT * 2}px`, pointerEvents: "none" }} />
     </div>
   );
 }
@@ -283,6 +299,7 @@ export function TimePickerModal({
             gap: "14px",
             margin: "12px 0 20px",
             overflow: "hidden",
+            userSelect: "none",
           }}
         >
           {/* Central Highlight Selection Bar behind the items */}
@@ -320,6 +337,8 @@ export function TimePickerModal({
               color: "#111827",
               zIndex: 1,
               marginTop: "-4px",
+              userSelect: "none",
+              pointerEvents: "none",
             }}
           >
             :

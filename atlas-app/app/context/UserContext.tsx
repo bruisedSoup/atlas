@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { realtimeService, RealtimeMessage } from "@/app/src/services/realtime";
 
 export interface UserProfileData {
   id?: string;
@@ -126,9 +127,29 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
       setAccessToken(session.access_token);
       await fetchProfile(session.access_token, session.user);
+
+      // Initialize Dual WebSocket (Django Channels + Supabase Realtime)
+      realtimeService.init(session.access_token, session.user.id);
     }
 
     initAuth();
+
+    // Listen for real-time profile updates across tabs/devices
+    const unsubProfile = realtimeService.on("PROFILE_UPDATED", (msg: RealtimeMessage) => {
+      if (msg.payload) {
+        setUserProfile((prev) => {
+          const next = prev ? { ...prev, ...msg.payload } : { ...msg.payload };
+          try {
+            localStorage.setItem("atlas_user_profile", JSON.stringify(next));
+          } catch {}
+          return next;
+        });
+      }
+    });
+
+    return () => {
+      unsubProfile();
+    };
   }, [supabase, fetchProfile]);
 
   const saveProfile = async (updated: Partial<UserProfileData>) => {
@@ -142,6 +163,9 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       } catch {}
       return next;
     });
+
+    // Broadcast real-time event across tabs & WebSocket
+    realtimeService.broadcast("PROFILE_UPDATED", updated);
 
     try {
       const res = await fetch(`${apiUrl}/api/users/profile/`, {
@@ -160,6 +184,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
           try {
             localStorage.setItem("atlas_user_profile", JSON.stringify(data.user));
           } catch {}
+          realtimeService.broadcast("PROFILE_UPDATED", data.user);
         }
       }
     } catch (err) {

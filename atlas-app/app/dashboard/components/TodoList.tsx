@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { PushpinIcon, getRandomPushpinColor } from "./PushpinIcon";
 
 export interface TaskItem {
@@ -8,7 +8,7 @@ export interface TaskItem {
   title: string;
   description?: string;
   label_type?: "custom" | "course";
-  status?: "ongoing" | "done" | "archived";
+  status?: "ongoing" | "done" | "completed" | "missed" | "archived";
   deadline_date?: string | null;
   deadline_time?: string | null;
   notify_before_deadline?: boolean;
@@ -16,10 +16,12 @@ export interface TaskItem {
   course?: string | null;
 }
 
+export type FilterStatus = "ongoing" | "missed" | "completed";
+
 interface TodoListProps {
   tasks: TaskItem[];
-  statusFilter: "ongoing" | "done" | "archived";
-  onStatusFilterChange: (status: "ongoing" | "done" | "archived") => void;
+  statusFilter: FilterStatus;
+  onStatusFilterChange: (status: FilterStatus) => void;
   onAddTask: () => void;
   onTaskClick: (task: TaskItem) => void;
   onCompleteTask: (taskId: string) => void;
@@ -38,6 +40,19 @@ export function TodoList({
   loading = false,
 }: TodoListProps) {
   const [checkingId, setCheckingId] = useState<string | null>(null);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const handleCheck = (e: React.MouseEvent, taskId: string) => {
     e.stopPropagation();
@@ -47,6 +62,73 @@ export function TodoList({
       setCheckingId(null);
     }, 250);
   };
+
+  const filterOptions: { id: FilterStatus; label: string; icon: React.ReactNode }[] = [
+    {
+      id: "ongoing",
+      label: "Ongoing",
+      icon: (
+        /* Circular Clock with curved loop arrow matching screenshot */
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="#111827"
+          strokeWidth="1.9"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M12 3a9 9 0 1 0 8.5 6" />
+          <polyline points="12 7 12 12 14.5 12" />
+          <path d="M18 14v4l-3-2" />
+        </svg>
+      ),
+    },
+    {
+      id: "missed",
+      label: "Missed",
+      icon: (
+        /* Circular Clock with exclamation mark */
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="#111827"
+          strokeWidth="1.9"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M12 3a9 9 0 1 0 8.5 6" />
+          <polyline points="12 7 12 12 14.5 12" />
+          <path d="M18.5 14v3.5" />
+          <circle cx="18.5" cy="20" r="0.75" fill="#111827" />
+        </svg>
+      ),
+    },
+    {
+      id: "completed",
+      label: "Completed",
+      icon: (
+        /* Clean Checkmark */
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="#111827"
+          strokeWidth="2.4"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <polyline points="20 6 9 17 4 12" />
+        </svg>
+      ),
+    },
+  ];
+
+  const currentOption = filterOptions.find((o) => o.id === statusFilter) || filterOptions[0];
 
   return (
     <div
@@ -70,8 +152,8 @@ export function TodoList({
           marginBottom: "20px",
         }}
       >
-        {/* Left: To-do Title & Status Filter */}
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+        {/* Left: To-do Title & Status Filter Dropdown */}
+        <div style={{ display: "flex", alignItems: "center", gap: "12px", position: "relative" }} ref={dropdownRef}>
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
@@ -82,29 +164,100 @@ export function TodoList({
             </h3>
           </div>
 
-          {/* Status filter badge */}
-          <button
-            onClick={() => {
-              const next = statusFilter === "ongoing" ? "done" : "ongoing";
-              onStatusFilterChange(next);
-            }}
-            style={{
-              background: "#bae6fd",
-              color: "#0369a1",
-              border: "none",
-              borderRadius: "6px",
-              padding: "4px 12px",
-              fontSize: "0.825rem",
-              fontWeight: 500,
-              cursor: "pointer",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "4px",
-            }}
-          >
-            <span style={{ textTransform: "capitalize" }}>{statusFilter}</span>
-            <span style={{ fontSize: "0.7rem" }}>▾</span>
-          </button>
+          {/* Status Filter Pill Button (matching screenshot) */}
+          <div style={{ position: "relative" }}>
+            <button
+              type="button"
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              style={{
+                background: "#cbe4fc", // Baby blue background
+                color: "#111827",
+                border: "1.5px solid #111827",
+                borderRadius: "24px",
+                padding: "4px 14px",
+                fontSize: "0.95rem",
+                fontFamily: "'Inter', sans-serif",
+                fontWeight: 500,
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px",
+                boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
+                transition: "all 0.15s ease",
+              }}
+            >
+              <span>{currentOption.label}</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </button>
+
+            {/* Custom Dropdown Menu Popup (matching screenshot) */}
+            {isDropdownOpen && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: "calc(100% + 6px)",
+                  left: 0,
+                  zIndex: 40,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "4px",
+                  background: "#ffffff",
+                  padding: "4px",
+                  borderRadius: "16px",
+                  boxShadow: "0 10px 25px -5px rgba(0,0,0,0.15), 0 8px 10px -6px rgba(0,0,0,0.1)",
+                }}
+              >
+                {filterOptions.map((opt) => {
+                  const isSelected = opt.id === statusFilter;
+
+                  return (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() => {
+                        onStatusFilterChange(opt.id);
+                        setIsDropdownOpen(false);
+                      }}
+                      style={{
+                        width: "160px",
+                        height: "40px",
+                        padding: "0 14px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        background: isSelected ? "#cbe4fc" : "#ffffff",
+                        border: "1.5px solid #111827",
+                        borderRadius: "12px",
+                        cursor: "pointer",
+                        fontFamily: "'Inter', sans-serif",
+                        fontSize: "0.95rem",
+                        fontWeight: 500,
+                        color: "#111827",
+                        transition: "background 0.15s ease",
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!isSelected) {
+                          e.currentTarget.style.backgroundColor = "#f3f4f6";
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!isSelected) {
+                          e.currentTarget.style.backgroundColor = "#ffffff";
+                        }
+                      }}
+                    >
+                      <span>{opt.label}</span>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        {opt.icon}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Right Action Icons: Refresh / Add */}
@@ -188,13 +341,15 @@ export function TodoList({
           >
             {statusFilter === "ongoing"
               ? "No tasks in your work hub!"
-              : `No ${statusFilter} tasks found.`}
+              : statusFilter === "missed"
+              ? "No missed deliverables. You're all caught up!"
+              : "No completed tasks yet."}
           </p>
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
           {tasks.map((task, idx) => {
-            const isChecked = checkingId === task.id;
+            const isChecked = checkingId === task.id || task.status === "done" || task.status === "completed";
             const pinColor = task.color || getRandomPushpinColor(task.id || idx);
 
             return (
@@ -207,12 +362,12 @@ export function TodoList({
                   justifyContent: "space-between",
                   padding: "12px 18px",
                   borderRadius: "10px",
-                  border: "1px solid #e5e7eb",
+                  border: "1.5px solid #e5e7eb",
                   background: "#ffffff",
                   cursor: "pointer",
                   transition: "border-color 0.15s ease, box-shadow 0.15s ease",
                   boxShadow: "0 1px 2px rgba(0,0,0,0.02)",
-                  opacity: isChecked ? 0.3 : 1,
+                  opacity: isChecked && statusFilter === "ongoing" ? 0.3 : 1,
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.borderColor = "#cbd5e1";
@@ -234,6 +389,7 @@ export function TodoList({
                       whiteSpace: "nowrap",
                       overflow: "hidden",
                       textOverflow: "ellipsis",
+                      textDecoration: isChecked && statusFilter === "completed" ? "line-through" : "none",
                     }}
                   >
                     {task.title}
@@ -242,8 +398,12 @@ export function TodoList({
 
                 {/* Right: Checkbox Container */}
                 <div
-                  onClick={(e) => handleCheck(e, task.id)}
-                  title="Mark as complete & send to Vault"
+                  onClick={(e) => {
+                    if (statusFilter !== "completed") {
+                      handleCheck(e, task.id);
+                    }
+                  }}
+                  title={statusFilter === "completed" ? "Completed" : "Mark as complete & send to Vault"}
                   style={{
                     width: "24px",
                     height: "24px",
@@ -252,7 +412,7 @@ export function TodoList({
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    cursor: "pointer",
+                    cursor: statusFilter === "completed" ? "default" : "pointer",
                     background: isChecked ? "#10b981" : "#ffffff",
                     borderColor: isChecked ? "#10b981" : "#9ca3af",
                     transition: "all 0.15s ease",

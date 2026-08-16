@@ -178,7 +178,17 @@ export function Sidebar({
             return (
               <button
                 key={item.id}
-                onClick={() => onTabChange(item.id)}
+                onClick={() => {
+                  if (item.id === "the-vault") {
+                    window.location.href = "/thevault";
+                    return;
+                  }
+                  if (item.id === "work-hub") {
+                    window.location.href = "/dashboard";
+                    return;
+                  }
+                  onTabChange(item.id);
+                }}
                 style={{
                   width: "100%",
                   height: "44px",

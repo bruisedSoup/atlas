@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 export interface CustomLabelItem {
   id?: string;
@@ -17,8 +17,6 @@ interface CustomLabelModalProps {
   onDeleteLabel: (label: CustomLabelItem) => Promise<void> | void;
 }
 
-const DEFAULT_PRESET_LABELS = ["heh", "clearance", "+1", "gamedev"];
-
 export function CustomLabelModal({
   isOpen,
   onClose,
@@ -30,15 +28,13 @@ export function CustomLabelModal({
 }: CustomLabelModalProps) {
   const [isEditMode, setIsEditMode] = useState(false);
   const [newLabelText, setNewLabelText] = useState("");
-  const [currentSelected, setCurrentSelected] = useState(selectedLabel || "heh");
+  const [currentSelected, setCurrentSelected] = useState(selectedLabel);
+
+  useEffect(() => {
+    setCurrentSelected(selectedLabel);
+  }, [selectedLabel, isOpen]);
 
   if (!isOpen) return null;
-
-  // Use user labels or fallback to initial presets from mockup
-  const displayLabels: CustomLabelItem[] =
-    labels.length > 0
-      ? labels
-      : DEFAULT_PRESET_LABELS.map((name) => ({ name }));
 
   const handleAdd = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -195,7 +191,7 @@ export function CustomLabelModal({
           {/* Solid Line Below New Label Input */}
           <div style={{ height: "1.5px", backgroundColor: "#374151", marginBottom: "4px" }} />
 
-          {/* Label Items List separated by Dashed Light-Blue Lines */}
+          {/* Dynamic Label Items List */}
           <div
             style={{
               maxHeight: "240px",
@@ -204,64 +200,80 @@ export function CustomLabelModal({
               flexDirection: "column",
             }}
           >
-            {displayLabels.map((lbl, idx) => {
-              const isSelected = currentSelected === lbl.name;
+            {labels.length === 0 ? (
+              <div
+                style={{
+                  padding: "28px 4px",
+                  textAlign: "center",
+                  color: "#9ca3af",
+                  fontSize: "0.875rem",
+                  fontFamily: "'Inter', sans-serif",
+                }}
+              >
+                No custom labels yet.
+                <br />
+                Add one above!
+              </div>
+            ) : (
+              labels.map((lbl, idx) => {
+                const isSelected = currentSelected === lbl.name;
 
-              return (
-                <div
-                  key={lbl.id || lbl.name || idx}
-                  onClick={() => {
-                    if (!isEditMode) {
-                      setCurrentSelected(lbl.name);
-                    }
-                  }}
-                  style={{
-                    borderBottom: "1.5px dashed #93c5fd", // Light blue dashed separator
-                    padding: "12px 2px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    cursor: "pointer",
-                    backgroundColor: isSelected ? "#eff6ff" : "transparent",
-                    transition: "background 0.15s ease",
-                  }}
-                >
-                  <span
+                return (
+                  <div
+                    key={lbl.id || lbl.name || idx}
+                    onClick={() => {
+                      if (!isEditMode) {
+                        setCurrentSelected(lbl.name);
+                      }
+                    }}
                     style={{
-                      fontFamily: "'Inter', sans-serif",
-                      fontSize: "1rem",
-                      fontWeight: isSelected ? 600 : 500,
-                      color: isSelected ? "#1d4ed8" : "#111827",
+                      borderBottom: "1.5px dashed #93c5fd", // Light blue dashed separator
+                      padding: "12px 2px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      cursor: "pointer",
+                      backgroundColor: isSelected ? "#eff6ff" : "transparent",
+                      transition: "background 0.15s ease",
                     }}
                   >
-                    {lbl.name}
-                  </span>
-
-                  {/* Edit mode: Delete cross button */}
-                  {isEditMode ? (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDeleteLabel(lbl);
-                      }}
+                    <span
                       style={{
-                        background: "none",
-                        border: "none",
-                        color: "#ef4444",
-                        fontSize: "1.1rem",
-                        cursor: "pointer",
-                        padding: "0 4px",
+                        fontFamily: "'Inter', sans-serif",
+                        fontSize: "1rem",
+                        fontWeight: isSelected ? 600 : 500,
+                        color: isSelected ? "#1d4ed8" : "#111827",
                       }}
                     >
-                      ✕
-                    </button>
-                  ) : isSelected ? (
-                    <span style={{ color: "#1d4ed8", fontSize: "0.95rem", fontWeight: 700 }}>✓</span>
-                  ) : null}
-                </div>
-              );
-            })}
+                      {lbl.name}
+                    </span>
+
+                    {/* Edit mode: Delete cross button */}
+                    {isEditMode ? (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDeleteLabel(lbl);
+                        }}
+                        style={{
+                          background: "none",
+                          border: "none",
+                          color: "#ef4444",
+                          fontSize: "1.1rem",
+                          cursor: "pointer",
+                          padding: "0 4px",
+                        }}
+                      >
+                        ✕
+                      </button>
+                    ) : isSelected ? (
+                      <span style={{ color: "#1d4ed8", fontSize: "0.95rem", fontWeight: 700 }}>✓</span>
+                    ) : null}
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
       </div>

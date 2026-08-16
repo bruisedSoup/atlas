@@ -38,13 +38,29 @@ class TaskViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         qs = Task.objects.filter(user=self.request.user)
         status_param = self.request.query_params.get("status")
-        today = timezone.now().date()
+        now = timezone.now()
+        today = now.date()
+        now_time = now.time()
+
         if status_param == "ongoing":
-            qs = qs.filter(status="ongoing").exclude(deadline_date__lt=today)
+            # Exclude tasks whose full deadline (date + time) has already passed
+            # If deadline_date < today → missed
+            # If deadline_date == today and deadline_time is set and deadline_time < now → missed
+            qs = qs.filter(status="ongoing").exclude(
+                deadline_date__lt=today
+            ).exclude(
+                deadline_date=today,
+                deadline_time__isnull=False,
+                deadline_time__lt=now_time,
+            )
         elif status_param in ["done", "completed"]:
             qs = qs.filter(status__in=["done", "completed"])
         elif status_param == "missed":
-            qs = qs.filter(status="ongoing", deadline_date__lt=today)
+            from django.db.models import Q
+            qs = qs.filter(status="ongoing").filter(
+                Q(deadline_date__lt=today) |
+                Q(deadline_date=today, deadline_time__isnull=False, deadline_time__lt=now_time)
+            )
         elif status_param:
             qs = qs.filter(status=status_param)
 

@@ -26,6 +26,13 @@ interface TaskEditModalProps {
   onDeleteCustomLabel?: (label: CustomLabelItem) => Promise<void> | void;
 }
 
+const getCurrentTimeStr = () => {
+  const now = new Date();
+  const h = String(now.getHours()).padStart(2, "0");
+  const m = String(now.getMinutes()).padStart(2, "0");
+  return `${h}:${m}`;
+};
+
 export function TaskEditModal({
   task,
   courses = [],
@@ -67,7 +74,7 @@ export function TaskEditModal({
       setDescription(task.description || "");
       setHasDeadline(!!task.deadline_date);
       setDeadlineDate(task.deadline_date || new Date().toISOString().split("T")[0]);
-      setDeadlineTime(task.deadline_time || "18:00");
+      setDeadlineTime(task.deadline_time || getCurrentTimeStr());
       setColor(task.color || getRandomPushpinColor(task.id));
     } else {
       // New task defaults (toggles off by default)
@@ -79,7 +86,7 @@ export function TaskEditModal({
       setDescription("");
       setHasDeadline(false);
       setDeadlineDate(new Date().toISOString().split("T")[0]);
-      setDeadlineTime("18:00");
+      setDeadlineTime(getCurrentTimeStr());
       setColor(getRandomPushpinColor());
     }
   }, [task, isOpen]);

@@ -46,6 +46,27 @@ export function TaskViewModal({
           animation: "modalFadeIn 0.15s ease-out",
         }}
       >
+        {/* Top Bar: Back Button */}
+        <div style={{ display: "flex", alignItems: "center", marginBottom: "16px" }}>
+          <button
+            type="button"
+            onClick={onClose}
+            style={{
+              background: "#bae6fd",
+              color: "#0369a1",
+              border: "1.5px solid #7dd3fc",
+              borderRadius: "16px",
+              padding: "4px 16px",
+              fontSize: "0.85rem",
+              fontFamily: "'Inter', sans-serif",
+              fontWeight: 500,
+              cursor: "pointer",
+            }}
+          >
+            &gt; Back
+          </button>
+        </div>
+
         {/* Top Double Line Border */}
         <div style={{ marginBottom: "28px" }}>
           <div style={{ height: "1.5px", background: "#4b5563", marginBottom: "3px" }} />

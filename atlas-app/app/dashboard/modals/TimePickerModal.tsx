@@ -1,12 +1,144 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 
 interface TimePickerModalProps {
   isOpen: boolean;
   onClose: () => void;
-  selectedTime: string; // "18:00" (24h)
+  selectedTime: string; // "18:00" (24h format)
   onSelectTime: (timeStr: string) => void;
+}
+
+const ITEM_HEIGHT = 44; // height of each drum item in px
+const VISIBLE_COUNT = 5; // 5 visible rows, middle is index 2
+
+interface WheelColumnProps<T> {
+  items: T[];
+  selectedItem: T;
+  onSelect: (item: T) => void;
+  renderItem?: (item: T) => React.ReactNode;
+  width?: string;
+}
+
+function WheelColumn<T extends string | number>({
+  items,
+  selectedItem,
+  onSelect,
+  renderItem,
+  width = "72px",
+}: WheelColumnProps<T>) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const isUserScrolling = useRef(false);
+  const scrollTimeout = useRef<NodeJS.Timeout | null>(null);
+
+  const selectedIndex = items.indexOf(selectedItem);
+
+  // Scroll to selected position on mount or external update
+  const scrollToSelected = useCallback(
+    (index: number, smooth = true) => {
+      if (containerRef.current && index >= 0) {
+        const top = index * ITEM_HEIGHT;
+        containerRef.current.scrollTo({
+          top,
+          behavior: smooth ? "smooth" : "auto",
+        });
+      }
+    },
+    []
+  );
+
+  useEffect(() => {
+    if (!isUserScrolling.current) {
+      scrollToSelected(selectedIndex, false);
+    }
+  }, [selectedIndex, scrollToSelected]);
+
+  const handleScroll = () => {
+    isUserScrolling.current = true;
+    if (scrollTimeout.current) clearTimeout(scrollTimeout.current);
+
+    scrollTimeout.current = setTimeout(() => {
+      if (containerRef.current) {
+        const scrollTop = containerRef.current.scrollTop;
+        const index = Math.round(scrollTop / ITEM_HEIGHT);
+        const clampedIndex = Math.max(0, Math.min(index, items.length - 1));
+
+        // Snap to exact item
+        containerRef.current.scrollTo({
+          top: clampedIndex * ITEM_HEIGHT,
+          behavior: "smooth",
+        });
+
+        if (items[clampedIndex] !== selectedItem) {
+          onSelect(items[clampedIndex]);
+        }
+      }
+      isUserScrolling.current = false;
+    }, 120);
+  };
+
+  return (
+    <div
+      ref={containerRef}
+      onScroll={handleScroll}
+      style={{
+        width,
+        height: `${ITEM_HEIGHT * VISIBLE_COUNT}px`,
+        overflowY: "auto",
+        scrollSnapType: "y mandatory",
+        position: "relative",
+        scrollbarWidth: "none",
+        msOverflowStyle: "none",
+        userSelect: "none",
+      }}
+    >
+      <style jsx>{`
+        div::-webkit-scrollbar {
+          display: none;
+        }
+      `}</style>
+
+      {/* Top Padding so first item can reach center */}
+      <div style={{ height: `${ITEM_HEIGHT * 2}px` }} />
+
+      {items.map((item, idx) => {
+        const isSelected = item === selectedItem;
+        const diff = Math.abs(idx - selectedIndex);
+        const opacity = isSelected ? 1 : diff === 1 ? 0.5 : 0.25;
+        const scale = isSelected ? 1.05 : 0.9;
+
+        return (
+          <div
+            key={String(item)}
+            onClick={() => {
+              onSelect(item);
+              scrollToSelected(idx, true);
+            }}
+            style={{
+              height: `${ITEM_HEIGHT}px`,
+              scrollSnapAlign: "center",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontFamily: "'EB Garamond', Georgia, serif",
+              fontSize: isSelected ? "1.65rem" : "1.25rem",
+              fontWeight: isSelected ? 600 : 400,
+              color: isSelected ? "#111827" : "#6b7280",
+              opacity,
+              transform: `scale(${scale})`,
+              transition: "opacity 0.15s ease, transform 0.15s ease, color 0.15s ease",
+              cursor: "pointer",
+            }}
+          >
+            {renderItem ? renderItem(item) : item}
+          </div>
+        );
+      })}
+
+      {/* Bottom Padding so last item can reach center */}
+      <div style={{ height: `${ITEM_HEIGHT * 2}px` }} />
+    </div>
+  );
 }
 
 export function TimePickerModal({
@@ -17,10 +149,10 @@ export function TimePickerModal({
 }: TimePickerModalProps) {
   // Parse initial 24h time to 12h + AM/PM
   const parseTime = (t: string) => {
-    if (!t) return { hour: 6, minute: "00", period: "PM" };
+    if (!t) return { hour: 6, minute: "30", period: "AM" };
     const [hStr, mStr] = t.split(":");
     let h = parseInt(hStr, 10);
-    const m = mStr || "00";
+    const m = String(mStr || "00").padStart(2, "0");
     const p = h >= 12 ? "PM" : "AM";
     if (h === 0) h = 12;
     else if (h > 12) h -= 12;
@@ -32,12 +164,22 @@ export function TimePickerModal({
   const [selectedMinute, setSelectedMinute] = useState(parsed.minute);
   const [selectedPeriod, setSelectedPeriod] = useState(parsed.period);
 
+  useEffect(() => {
+    if (isOpen) {
+      const p = parseTime(selectedTime);
+      setSelectedHour(p.hour);
+      setSelectedMinute(p.minute);
+      setSelectedPeriod(p.period);
+    }
+  }, [isOpen, selectedTime]);
+
   if (!isOpen) return null;
 
-  const hours = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
-  const minutes = ["00", "05", "10", "15", "20", "25", "30", "35", "40", "45", "50", "55"];
+  const hours = Array.from({ length: 12 }, (_, i) => i + 1); // 1 to 12
+  const minutes = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, "0")); // "00" to "59"
+  const periods = ["AM", "PM"];
 
-  const handleSave = () => {
+  const handleConfirm = () => {
     let h = selectedHour;
     if (selectedPeriod === "PM" && h < 12) h += 12;
     if (selectedPeriod === "AM" && h === 12) h = 0;
@@ -64,160 +206,145 @@ export function TimePickerModal({
         onClick={(e) => e.stopPropagation()}
         style={{
           width: "100%",
-          maxWidth: "360px",
+          maxWidth: "340px",
           backgroundColor: "#ffffff",
-          borderRadius: "16px",
-          padding: "24px 22px",
-          boxShadow: "0 20px 30px rgba(0,0,0,0.15)",
+          borderRadius: "18px",
+          padding: "24px 20px 22px",
+          boxShadow: "0 20px 35px rgba(0,0,0,0.15)",
           border: "1.5px solid #374151",
           fontFamily: "'Inter', sans-serif",
+          position: "relative",
         }}
       >
-        {/* Header Title */}
-        <div style={{ textAlign: "center", marginBottom: "16px" }}>
-          <span
+        {/* Title */}
+        <div style={{ textAlign: "center", marginBottom: "12px" }}>
+          <h3
             style={{
               fontFamily: "'EB Garamond', Georgia, serif",
-              fontSize: "1.35rem",
+              fontSize: "1.45rem",
               fontWeight: 600,
               fontStyle: "italic",
               color: "#111827",
+              margin: 0,
             }}
           >
             Set Time
-          </span>
+          </h3>
         </div>
 
-        {/* Big Alarm Digital Display */}
+        {/* 3-Column Drum Wheel Container */}
         <div
           style={{
+            position: "relative",
             display: "flex",
-            alignItems: "center",
             justifyContent: "center",
-            gap: "8px",
-            background: "#f9fafb",
-            borderRadius: "12px",
-            padding: "12px 16px",
-            marginBottom: "20px",
-            border: "1px solid #e5e7eb",
+            alignItems: "center",
+            gap: "14px",
+            margin: "12px 0 20px",
+            overflow: "hidden",
           }}
         >
+          {/* Central Highlight Selection Bar behind the items */}
+          <div
+            style={{
+              position: "absolute",
+              top: `${ITEM_HEIGHT * 2}px`,
+              left: "10px",
+              right: "10px",
+              height: `${ITEM_HEIGHT}px`,
+              backgroundColor: "#f4f4f5",
+              borderRadius: "10px",
+              border: "1.5px solid #e4e4e7",
+              pointerEvents: "none",
+              zIndex: 0,
+            }}
+          />
+
+          {/* Column 1: Hour */}
+          <div style={{ zIndex: 1 }}>
+            <WheelColumn
+              items={hours}
+              selectedItem={selectedHour}
+              onSelect={setSelectedHour}
+              width="64px"
+            />
+          </div>
+
+          {/* Separator Colon */}
           <span
             style={{
               fontFamily: "'EB Garamond', Georgia, serif",
-              fontSize: "2.2rem",
+              fontSize: "1.5rem",
               fontWeight: 600,
               color: "#111827",
+              zIndex: 1,
+              marginTop: "-4px",
             }}
           >
-            {selectedHour}:{selectedMinute}
+            :
           </span>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: "4px", marginLeft: "12px" }}>
-            <button
-              type="button"
-              onClick={() => setSelectedPeriod("AM")}
-              style={{
-                padding: "2px 8px",
-                borderRadius: "4px",
-                border: "none",
-                background: selectedPeriod === "AM" ? "#111827" : "#e5e7eb",
-                color: selectedPeriod === "AM" ? "#ffffff" : "#4b5563",
-                fontSize: "0.75rem",
-                fontWeight: 600,
-                cursor: "pointer",
-              }}
-            >
-              AM
-            </button>
-            <button
-              type="button"
-              onClick={() => setSelectedPeriod("PM")}
-              style={{
-                padding: "2px 8px",
-                borderRadius: "4px",
-                border: "none",
-                background: selectedPeriod === "PM" ? "#111827" : "#e5e7eb",
-                color: selectedPeriod === "PM" ? "#ffffff" : "#4b5563",
-                fontSize: "0.75rem",
-                fontWeight: 600,
-                cursor: "pointer",
-              }}
-            >
-              PM
-            </button>
+          {/* Column 2: Minute */}
+          <div style={{ zIndex: 1 }}>
+            <WheelColumn
+              items={minutes}
+              selectedItem={selectedMinute}
+              onSelect={setSelectedMinute}
+              width="64px"
+            />
           </div>
-        </div>
 
-        {/* Hours Selector Row/Grid */}
-        <div style={{ marginBottom: "14px" }}>
-          <label style={{ fontSize: "0.75rem", color: "#6b7280", fontWeight: 600, display: "block", marginBottom: "6px" }}>
-            HOUR
-          </label>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: "6px" }}>
-            {hours.map((h) => (
-              <button
-                key={h}
-                type="button"
-                onClick={() => setSelectedHour(h)}
-                style={{
-                  height: "32px",
-                  borderRadius: "6px",
-                  border: selectedHour === h ? "1.5px solid #111827" : "1px solid #e5e7eb",
-                  background: selectedHour === h ? "#111827" : "#ffffff",
-                  color: selectedHour === h ? "#ffffff" : "#1f2937",
-                  fontSize: "0.85rem",
-                  fontWeight: selectedHour === h ? 600 : 400,
-                  cursor: "pointer",
-                }}
-              >
-                {h}
-              </button>
-            ))}
+          {/* Column 3: AM/PM */}
+          <div style={{ zIndex: 1 }}>
+            <WheelColumn
+              items={periods}
+              selectedItem={selectedPeriod}
+              onSelect={setSelectedPeriod}
+              width="68px"
+            />
           </div>
-        </div>
 
-        {/* Minutes Selector Row/Grid */}
-        <div style={{ marginBottom: "20px" }}>
-          <label style={{ fontSize: "0.75rem", color: "#6b7280", fontWeight: 600, display: "block", marginBottom: "6px" }}>
-            MINUTE
-          </label>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: "6px" }}>
-            {minutes.map((m) => (
-              <button
-                key={m}
-                type="button"
-                onClick={() => setSelectedMinute(m)}
-                style={{
-                  height: "32px",
-                  borderRadius: "6px",
-                  border: selectedMinute === m ? "1.5px solid #111827" : "1px solid #e5e7eb",
-                  background: selectedMinute === m ? "#111827" : "#ffffff",
-                  color: selectedMinute === m ? "#ffffff" : "#1f2937",
-                  fontSize: "0.85rem",
-                  fontWeight: selectedMinute === m ? 600 : 400,
-                  cursor: "pointer",
-                }}
-              >
-                {m}
-              </button>
-            ))}
-          </div>
+          {/* Top Fade Gradient Overlay */}
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              height: `${ITEM_HEIGHT * 1.6}px`,
+              background: "linear-gradient(to bottom, rgba(255,255,255,0.95) 20%, rgba(255,255,255,0))",
+              pointerEvents: "none",
+              zIndex: 2,
+            }}
+          />
+
+          {/* Bottom Fade Gradient Overlay */}
+          <div
+            style={{
+              position: "absolute",
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: `${ITEM_HEIGHT * 1.6}px`,
+              background: "linear-gradient(to top, rgba(255,255,255,0.95) 20%, rgba(255,255,255,0))",
+              pointerEvents: "none",
+              zIndex: 2,
+            }}
+          />
         </div>
 
         {/* Action Buttons */}
-        <div style={{ display: "flex", gap: "10px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
           <button
             type="button"
             onClick={onClose}
             style={{
-              flex: 1,
-              height: "38px",
+              height: "40px",
               borderRadius: "8px",
-              background: "#f4f4f5",
-              border: "none",
+              background: "#ffffff",
+              border: "1.5px solid #4b5563",
               color: "#374151",
-              fontSize: "0.85rem",
+              fontSize: "0.875rem",
               fontWeight: 500,
               cursor: "pointer",
             }}
@@ -226,17 +353,17 @@ export function TimePickerModal({
           </button>
           <button
             type="button"
-            onClick={handleSave}
+            onClick={handleConfirm}
             style={{
-              flex: 1,
-              height: "38px",
+              height: "40px",
               borderRadius: "8px",
               background: "#111827",
-              border: "none",
+              border: "1.5px solid #111827",
               color: "#ffffff",
-              fontSize: "0.85rem",
+              fontSize: "0.875rem",
               fontWeight: 600,
               cursor: "pointer",
+              boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
             }}
           >
             Set Time

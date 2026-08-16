@@ -83,17 +83,32 @@ class SupabaseJWTAuthentication(BaseAuthentication):
         except Exception as exc:
             raise AuthenticationFailed(f"Invalid token: {exc}")
 
-        user_id = payload.get("sub")
-        email = payload.get("email", "")
-        metadata = payload.get("user_metadata", {})
-        full_name = metadata.get("full_name", "") or metadata.get("name", "")
-        avatar_url = metadata.get("avatar_url", "") or metadata.get("picture", "")
+        # Extract name & avatar from all possible Supabase OAuth locations
+        metadata = payload.get("user_metadata") or {}
+        identities = payload.get("identities") or []
+        identity_data = identities[0].get("identity_data", {}) if (isinstance(identities, list) and len(identities) > 0) else {}
+
+        full_name = (
+            metadata.get("full_name")
+            or metadata.get("name")
+            or identity_data.get("full_name")
+            or identity_data.get("name")
+            or payload.get("name", "")
+        )
+        avatar_url = (
+            metadata.get("avatar_url")
+            or metadata.get("picture")
+            or identity_data.get("avatar_url")
+            or identity_data.get("picture")
+            or payload.get("picture", "")
+            or payload.get("avatar_url", "")
+        )
 
         if not user_id:
             raise AuthenticationFailed("Token payload missing 'sub'.")
 
-        # Upsert the local profile row
-        user, _ = User.objects.update_or_create(
+        # Upsert the local profile row without erasing existing valid avatar
+        user, created = User.objects.get_or_create(
             id=user_id,
             defaults={
                 "email": email,
@@ -101,5 +116,21 @@ class SupabaseJWTAuthentication(BaseAuthentication):
                 "avatar_url": avatar_url,
             },
         )
+        if not created:
+            updated = False
+            if email and user.email != email:
+                user.email = email
+                updated = True
+            if full_name and not user.full_name:
+                user.full_name = full_name
+                updated = True
+            if avatar_url and not user.avatar_url:
+                user.avatar_url = avatar_url
+                updated = True
+            elif avatar_url and user.avatar_url != avatar_url and not user.avatar_url.startswith("data:"):
+                user.avatar_url = avatar_url
+                updated = True
+            if updated:
+                user.save()
 
         return (user, token)

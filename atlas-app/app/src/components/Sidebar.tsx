@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 interface SidebarProps {
@@ -12,12 +12,13 @@ interface SidebarProps {
 }
 
 export function Sidebar({
-  activeTab = "work-hub",
+  activeTab,
   onTabChange = () => {},
   collapsed = false,
   onToggleCollapse = () => {},
 }: SidebarProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const supabase = createClient();
 
   const handleSignOut = async () => {
@@ -182,7 +183,11 @@ export function Sidebar({
         {/* Navigation Items */}
         <nav style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
           {navItems.map((item) => {
-            const isActive = activeTab === item.id;
+            const isActive =
+              pathname === item.href ||
+              (pathname.includes("dashboard") && item.id === "work-hub") ||
+              (pathname.includes("thevault") && item.id === "the-vault") ||
+              activeTab === item.id;
             return (
               <button
                 key={item.id}

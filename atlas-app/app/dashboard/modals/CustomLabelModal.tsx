@@ -51,7 +51,6 @@ export function CustomLabelModal({
 
   return (
     <div
-      onClick={onClose}
       style={{
         position: "fixed",
         inset: 0,
@@ -65,7 +64,6 @@ export function CustomLabelModal({
     >
       {/* Outer Glowing / Warm Frame matching Image 2 */}
       <div
-        onClick={(e) => e.stopPropagation()}
         style={{
           width: "100%",
           maxWidth: "340px",

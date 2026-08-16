@@ -80,7 +80,6 @@ export function DatePickerModal({
 
   return (
     <div
-      onClick={onClose}
       style={{
         position: "fixed",
         inset: 0,
@@ -93,7 +92,6 @@ export function DatePickerModal({
       }}
     >
       <div
-        onClick={(e) => e.stopPropagation()}
         style={{
           width: "100%",
           maxWidth: "360px",

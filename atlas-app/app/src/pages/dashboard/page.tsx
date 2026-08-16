@@ -26,12 +26,12 @@ export default function DashboardPage() {
   const [selectedTaskForEdit, setSelectedTaskForEdit] = useState<TaskItem | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
-  const { accessToken } = useUser();
+  const { accessToken, getFreshToken } = useUser();
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
   // Fetch missed count (always, regardless of current filter)
   const fetchMissedCount = useCallback(async (tokenOverride?: string) => {
-    const token = tokenOverride || accessToken;
+    const token = tokenOverride || (await getFreshToken());
     if (!token) return;
     try {
       const res = await fetch(`${apiUrl}/api/tasks/?status=missed`, {
@@ -43,11 +43,11 @@ export default function DashboardPage() {
         setMissedCount(items.length);
       }
     } catch {}
-  }, [accessToken, apiUrl]);
+  }, [getFreshToken, apiUrl]);
 
   // Fetch Custom Labels
   const fetchCustomLabels = useCallback(async (tokenOverride?: string) => {
-    const token = tokenOverride || accessToken;
+    const token = tokenOverride || (await getFreshToken());
     if (!token) return;
     try {
       const res = await fetch(`${apiUrl}/api/tasks/custom-labels/`, {
@@ -63,11 +63,11 @@ export default function DashboardPage() {
     } catch (err) {
       console.error("Failed to fetch custom labels:", err);
     }
-  }, [accessToken, apiUrl]);
+  }, [getFreshToken, apiUrl]);
 
   // Fetch Courses
   const fetchCourses = useCallback(async (tokenOverride?: string) => {
-    const token = tokenOverride || accessToken;
+    const token = tokenOverride || (await getFreshToken());
     if (!token) return;
     try {
       const res = await fetch(`${apiUrl}/api/courses/`, {
@@ -82,7 +82,7 @@ export default function DashboardPage() {
     } catch (err) {
       console.error("Failed to fetch courses:", err);
     }
-  }, [accessToken, apiUrl]);
+  }, [getFreshToken, apiUrl]);
 
   useEffect(() => {
     // 0ms instant cache load
@@ -100,7 +100,7 @@ export default function DashboardPage() {
 
   // Fetch Tasks
   const fetchTasks = useCallback(async (tokenOverride?: string) => {
-    const token = tokenOverride || accessToken;
+    const token = tokenOverride || (await getFreshToken());
     if (!token) return;
     try {
       let url = `${apiUrl}/api/tasks/?status=${statusFilter}`;
@@ -133,7 +133,7 @@ export default function DashboardPage() {
     } finally {
       setLoading(false);
     }
-  }, [accessToken, apiUrl, statusFilter, activeLabelFilter, courses]);
+  }, [getFreshToken, apiUrl, statusFilter, activeLabelFilter, courses]);
 
   useEffect(() => {
     if (accessToken) {
@@ -192,12 +192,13 @@ export default function DashboardPage() {
 
   // Add Custom Label
   const handleAddCustomLabel = async (name: string) => {
-    if (!accessToken) return;
+    const token = await getFreshToken();
+    if (!token) return;
     try {
       const res = await fetch(`${apiUrl}/api/tasks/custom-labels/`, {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${accessToken}`,
+          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ name }),
@@ -213,13 +214,14 @@ export default function DashboardPage() {
 
   // Delete Custom Label
   const handleDeleteCustomLabel = async (label: CustomLabelItem) => {
-    if (!accessToken || !label.id) return;
+    const token = await getFreshToken();
+    if (!token || !label.id) return;
     setCustomLabels((prev) => prev.filter((l) => l.id !== label.id));
     try {
       await fetch(`${apiUrl}/api/tasks/custom-labels/${label.id}/`, {
         method: "DELETE",
         headers: {
-          Authorization: `Bearer ${accessToken}`,
+          Authorization: `Bearer ${token}`,
         },
       });
     } catch (err) {
@@ -230,7 +232,8 @@ export default function DashboardPage() {
 
   // Create or Update Task
   const handleSaveTask = async (taskData: Partial<TaskItem>) => {
-    if (!accessToken) {
+    const token = await getFreshToken();
+    if (!token) {
       throw new Error("Not authenticated. Please sign in again.");
     }
 
@@ -239,7 +242,7 @@ export default function DashboardPage() {
       const res = await fetch(`${apiUrl}/api/tasks/${taskData.id}/`, {
         method: "PATCH",
         headers: {
-          Authorization: `Bearer ${accessToken}`,
+          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify(taskData),
@@ -255,7 +258,7 @@ export default function DashboardPage() {
       const res = await fetch(`${apiUrl}/api/tasks/`, {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${accessToken}`,
+          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify(taskData),
@@ -271,7 +274,8 @@ export default function DashboardPage() {
 
   // Complete task (check to vault)
   const handleCompleteTask = async (taskId: string) => {
-    if (!accessToken) return;
+    const token = await getFreshToken();
+    if (!token) return;
 
     // Optimistically update UI
     setTasks((prev) => prev.filter((t) => t.id !== taskId));
@@ -280,7 +284,7 @@ export default function DashboardPage() {
       await fetch(`${apiUrl}/api/tasks/${taskId}/`, {
         method: "PATCH",
         headers: {
-          Authorization: `Bearer ${accessToken}`,
+          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ status: "done" }),
@@ -291,19 +295,20 @@ export default function DashboardPage() {
     }
   };
 
-  // Delete task
+  // Delete task permanently
   const handleDeleteTask = async (taskId: string) => {
-    if (!accessToken) return;
-    setSelectedTaskForView(null);
+    const token = await getFreshToken();
+    if (!token) return;
 
     // Optimistically remove
     setTasks((prev) => prev.filter((t) => t.id !== taskId));
+    setSelectedTaskForView(null);
 
     try {
       await fetch(`${apiUrl}/api/tasks/${taskId}/`, {
         method: "DELETE",
         headers: {
-          Authorization: `Bearer ${accessToken}`,
+          Authorization: `Bearer ${token}`,
         },
       });
     } catch (err) {

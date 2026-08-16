@@ -16,7 +16,7 @@ export default function TheVaultPage() {
   const [loading, setLoading] = useState(true);
   const [selectedTaskForView, setSelectedTaskForView] = useState<TaskItem | null>(null);
 
-  const { accessToken } = useUser();
+  const { accessToken, getFreshToken } = useUser();
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
   useEffect(() => {
@@ -35,7 +35,7 @@ export default function TheVaultPage() {
 
   // Fetch Completed Tasks
   const fetchCompletedTasks = useCallback(async (tokenOverride?: string) => {
-    const token = tokenOverride || accessToken;
+    const token = tokenOverride || (await getFreshToken());
     if (!token) return;
     try {
       const res = await fetch(`${apiUrl}/api/tasks/?status=done`, {
@@ -56,7 +56,7 @@ export default function TheVaultPage() {
     } finally {
       setLoading(false);
     }
-  }, [accessToken, apiUrl]);
+  }, [getFreshToken, apiUrl]);
 
   useEffect(() => {
     if (accessToken) {
@@ -94,7 +94,8 @@ export default function TheVaultPage() {
 
   // Restore Task to Work Hub
   const handleRestoreTask = async (taskId: string) => {
-    if (!accessToken) return;
+    const token = await getFreshToken();
+    if (!token) return;
     setSelectedTaskForView(null);
     setCompletedTasks((prev) => prev.filter((t) => t.id !== taskId));
 
@@ -102,7 +103,7 @@ export default function TheVaultPage() {
       await fetch(`${apiUrl}/api/tasks/${taskId}/`, {
         method: "PATCH",
         headers: {
-          Authorization: `Bearer ${accessToken}`,
+          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ status: "ongoing" }),
@@ -115,7 +116,8 @@ export default function TheVaultPage() {
 
   // Permanently Delete Task
   const handleDeleteTask = async (taskId: string) => {
-    if (!accessToken) return;
+    const token = await getFreshToken();
+    if (!token) return;
     setSelectedTaskForView(null);
     setCompletedTasks((prev) => prev.filter((t) => t.id !== taskId));
 
@@ -123,7 +125,7 @@ export default function TheVaultPage() {
       await fetch(`${apiUrl}/api/tasks/${taskId}/`, {
         method: "DELETE",
         headers: {
-          Authorization: `Bearer ${accessToken}`,
+          Authorization: `Bearer ${token}`,
         },
       });
     } catch (err) {

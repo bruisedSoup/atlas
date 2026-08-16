@@ -15,6 +15,7 @@ export interface UserProfileData {
 interface UserContextType {
   userProfile: UserProfileData | null;
   accessToken: string;
+  getFreshToken: () => Promise<string>;
   loading: boolean;
   isProfileModalOpen: boolean;
   openProfileModal: () => void;
@@ -134,6 +135,25 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
     initAuth();
 
+    // Listen for auth state changes (token refresh, sign in, sign out)
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.access_token) {
+        setAccessToken(session.access_token);
+        if (session.user?.id) {
+          realtimeService.init(session.access_token, session.user.id);
+        }
+      } else if (event === "SIGNED_OUT") {
+        setAccessToken("");
+        setUserProfile(null);
+        try {
+          localStorage.removeItem("atlas_user_profile");
+          localStorage.removeItem("atlas_cached_tasks");
+        } catch {}
+      }
+    });
+
     // Listen for real-time profile updates across tabs/devices
     const unsubProfile = realtimeService.on("PROFILE_UPDATED", (msg: RealtimeMessage) => {
       if (msg.payload) {
@@ -148,12 +168,27 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     });
 
     return () => {
+      subscription?.unsubscribe();
       unsubProfile();
     };
   }, [supabase, fetchProfile]);
 
+  const getFreshToken = useCallback(async (): Promise<string> => {
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (session?.access_token) {
+        setAccessToken(session.access_token);
+        return session.access_token;
+      }
+    } catch {}
+    return accessToken;
+  }, [supabase, accessToken]);
+
   const saveProfile = async (updated: Partial<UserProfileData>) => {
-    if (!accessToken) return;
+    const token = await getFreshToken();
+    if (!token) return;
 
     // Optimistically update everywhere in real-time
     setUserProfile((prev) => {
@@ -216,6 +251,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       value={{
         userProfile,
         accessToken,
+        getFreshToken,
         loading,
         isProfileModalOpen,
         openProfileModal: () => setIsProfileModalOpen(true),

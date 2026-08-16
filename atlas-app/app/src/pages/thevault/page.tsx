@@ -7,6 +7,7 @@ import { VaultHeaderCards, VaultTimeFilter } from "./components/VaultHeaderCards
 import { VaultTodoList } from "./components/VaultTodoList";
 import { VaultTaskViewModal } from "./modals/VaultTaskViewModal";
 import { useUser } from "@/app/context/UserContext";
+import { realtimeService } from "@/app/src/services/realtime";
 
 export default function TheVaultPage() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -44,6 +45,34 @@ export default function TheVaultPage() {
     if (accessToken) {
       fetchCompletedTasks();
     }
+
+    // Real-time synchronization for The Vault
+    const unsubTaskUpdated = realtimeService.on("TASK_UPDATED", (msg) => {
+      if (msg.payload) {
+        if (msg.payload.status === "done" || msg.payload.status === "completed") {
+          setCompletedTasks((prev) => {
+            if (prev.some((t) => t.id === msg.payload.id)) {
+              return prev.map((t) => (t.id === msg.payload.id ? { ...t, ...msg.payload } : t));
+            }
+            return [msg.payload, ...prev];
+          });
+        } else {
+          // Status changed from done to ongoing
+          setCompletedTasks((prev) => prev.filter((t) => t.id !== msg.payload.id));
+        }
+      }
+    });
+
+    const unsubTaskDeleted = realtimeService.on("TASK_DELETED", (msg) => {
+      if (msg.payload?.id) {
+        setCompletedTasks((prev) => prev.filter((t) => t.id !== msg.payload.id));
+      }
+    });
+
+    return () => {
+      unsubTaskUpdated();
+      unsubTaskDeleted();
+    };
   }, [accessToken, fetchCompletedTasks]);
 
   // Restore Task to Work Hub

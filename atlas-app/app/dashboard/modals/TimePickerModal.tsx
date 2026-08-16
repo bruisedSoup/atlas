@@ -247,7 +247,6 @@ export function TimePickerModal({
 
   return (
     <div
-      onClick={onClose}
       style={{
         position: "fixed",
         inset: 0,
@@ -260,7 +259,6 @@ export function TimePickerModal({
       }}
     >
       <div
-        onClick={(e) => e.stopPropagation()}
         style={{
           width: "100%",
           maxWidth: "340px",

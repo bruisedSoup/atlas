@@ -7,19 +7,23 @@ export type VaultTimeFilter = "All" | "This Week" | "This Month" | "This Semeste
 interface VaultHeaderCardsProps {
   userName?: string;
   avatarUrl?: string;
+  bio?: string;
   completedCount: number;
   activeTimeFilter: VaultTimeFilter;
   onTimeFilterChange: (filter: VaultTimeFilter) => void;
   onAvatarUpload?: (file: File) => void;
+  onOpenProfile?: () => void;
 }
 
 export function VaultHeaderCards({
   userName = "Isabella Gonzales",
   avatarUrl = "",
+  bio = "",
   completedCount = 0,
   activeTimeFilter = "All",
   onTimeFilterChange,
   onAvatarUpload,
+  onOpenProfile = () => {},
 }: VaultHeaderCardsProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -236,20 +240,24 @@ export function VaultHeaderCards({
                 color: "#111827",
               }}
             >
-              “Carpi diem”
+              {bio ? `“${bio}”` : "“Carpi diem”"}
             </span>
 
             <button
               type="button"
+              onClick={onOpenProfile}
               style={{
                 borderRadius: "14px",
-                border: "1px solid #111827",
+                border: "1.5px solid #111827",
                 background: "#ffffff",
-                padding: "2px 12px",
+                padding: "2px 14px",
                 fontSize: "0.75rem",
                 fontFamily: "'Inter', sans-serif",
+                fontWeight: 500,
                 color: "#111827",
                 cursor: "pointer",
+                boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
+                transition: "all 0.15s ease",
               }}
             >
               View Profile

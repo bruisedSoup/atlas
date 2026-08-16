@@ -28,12 +28,15 @@ function WheelColumn<T extends string | number>({
   width = "72px",
 }: WheelColumnProps<T>) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const isDragging = useRef(false);
+  const startY = useRef(0);
+  const startScrollTop = useRef(0);
   const isUserScrolling = useRef(false);
   const scrollTimeout = useRef<NodeJS.Timeout | null>(null);
 
   const selectedIndex = items.indexOf(selectedItem);
 
-  // Scroll to selected position on mount or external update
+  // Scroll to selected position
   const scrollToSelected = useCallback(
     (index: number, smooth = true) => {
       if (containerRef.current && index >= 0) {
@@ -48,39 +51,76 @@ function WheelColumn<T extends string | number>({
   );
 
   useEffect(() => {
-    if (!isUserScrolling.current) {
+    if (!isUserScrolling.current && !isDragging.current) {
       scrollToSelected(selectedIndex, false);
     }
   }, [selectedIndex, scrollToSelected]);
+
+  // Snap to nearest item after scroll finishes
+  const snapToNearest = () => {
+    if (!containerRef.current) return;
+    const scrollTop = containerRef.current.scrollTop;
+    const index = Math.round(scrollTop / ITEM_HEIGHT);
+    const clampedIndex = Math.max(0, Math.min(index, items.length - 1));
+
+    containerRef.current.scrollTo({
+      top: clampedIndex * ITEM_HEIGHT,
+      behavior: "smooth",
+    });
+
+    if (items[clampedIndex] !== selectedItem) {
+      onSelect(items[clampedIndex]);
+    }
+  };
 
   const handleScroll = () => {
     isUserScrolling.current = true;
     if (scrollTimeout.current) clearTimeout(scrollTimeout.current);
 
     scrollTimeout.current = setTimeout(() => {
-      if (containerRef.current) {
-        const scrollTop = containerRef.current.scrollTop;
-        const index = Math.round(scrollTop / ITEM_HEIGHT);
-        const clampedIndex = Math.max(0, Math.min(index, items.length - 1));
-
-        // Snap to exact item
-        containerRef.current.scrollTo({
-          top: clampedIndex * ITEM_HEIGHT,
-          behavior: "smooth",
-        });
-
-        if (items[clampedIndex] !== selectedItem) {
-          onSelect(items[clampedIndex]);
-        }
-      }
+      snapToNearest();
       isUserScrolling.current = false;
-    }, 120);
+    }, 100);
+  };
+
+  // Mouse Drag Support
+  const handleMouseDown = (e: React.MouseEvent) => {
+    isDragging.current = true;
+    startY.current = e.clientY;
+    if (containerRef.current) {
+      startScrollTop.current = containerRef.current.scrollTop;
+    }
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+  };
+
+  const handleMouseMove = (e: MouseEvent) => {
+    if (!isDragging.current || !containerRef.current) return;
+    const deltaY = e.clientY - startY.current;
+    containerRef.current.scrollTop = startScrollTop.current - deltaY;
+  };
+
+  const handleMouseUp = () => {
+    if (!isDragging.current) return;
+    isDragging.current = false;
+    window.removeEventListener("mousemove", handleMouseMove);
+    window.removeEventListener("mouseup", handleMouseUp);
+    snapToNearest();
+  };
+
+  // Wheel listener
+  const handleWheel = (e: React.WheelEvent) => {
+    if (!containerRef.current) return;
+    containerRef.current.scrollTop += e.deltaY * 0.4;
+    handleScroll();
   };
 
   return (
     <div
       ref={containerRef}
       onScroll={handleScroll}
+      onWheel={handleWheel}
+      onMouseDown={handleMouseDown}
       style={{
         width,
         height: `${ITEM_HEIGHT * VISIBLE_COUNT}px`,
@@ -90,6 +130,7 @@ function WheelColumn<T extends string | number>({
         scrollbarWidth: "none",
         msOverflowStyle: "none",
         userSelect: "none",
+        cursor: "grab",
       }}
     >
       <style jsx>{`

@@ -316,7 +316,7 @@ export default function DashboardPage() {
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
       />
 
-      {/* Main Content Area */}
+      {/* Main Content Area: Work Hub */}
       <main
         style={{
           flex: 1,
@@ -326,57 +326,24 @@ export default function DashboardPage() {
           width: "100%",
         }}
       >
-        {activeTab === "work-hub" && (
-          <>
-            {/* Header Cards (Work Hub Filters + Global User Profile Card) */}
-            <HeaderCards
-              activeFilter={activeLabelFilter}
-              onFilterChange={setActiveLabelFilter}
-              customLabels={customFilterLabels}
-            />
+        {/* Header Cards (Work Hub Filters + Global User Profile Card) */}
+        <HeaderCards
+          activeFilter={activeLabelFilter}
+          onFilterChange={setActiveLabelFilter}
+          customLabels={customFilterLabels}
+        />
 
-            {/* Todo List / Deliverables */}
-            <TodoList
-              tasks={tasks}
-              statusFilter={statusFilter}
-              onStatusFilterChange={setStatusFilter}
-              onAddTask={handleOpenAddModal}
-              onTaskClick={(task) => setSelectedTaskForView(task)}
-              onCompleteTask={handleCompleteTask}
-              onRefresh={fetchTasks}
-              loading={loading}
-            />
-          </>
-        )}
-
-        {/* Placeholder for other tabs */}
-        {activeTab !== "work-hub" && (
-          <div
-            style={{
-              background: "#ffffff",
-              borderRadius: "14px",
-              border: "1px solid #e5e7eb",
-              padding: "48px 32px",
-              textAlign: "center",
-              minHeight: "400px",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <h2 style={{ fontFamily: "'EB Garamond', serif", fontSize: "2rem", marginBottom: "8px" }}>
-              {activeTab === "the-vault" && "The Vault"}
-              {activeTab === "courses" && "Courses"}
-              {activeTab === "calendar" && "Calendar"}
-              {activeTab === "schedule" && "Schedule"}
-              {activeTab === "settings" && "Settings"}
-            </h2>
-            <p style={{ color: "#6b7280", fontSize: "0.9rem" }}>
-              This section will be available in the upcoming build steps.
-            </p>
-          </div>
-        )}
+        {/* Todo List / Deliverables */}
+        <TodoList
+          tasks={tasks}
+          statusFilter={statusFilter}
+          onStatusFilterChange={setStatusFilter}
+          onAddTask={handleOpenAddModal}
+          onTaskClick={(task) => setSelectedTaskForView(task)}
+          onCompleteTask={handleCompleteTask}
+          onRefresh={fetchTasks}
+          loading={loading}
+        />
       </main>
 
       {/* View Task Modal */}

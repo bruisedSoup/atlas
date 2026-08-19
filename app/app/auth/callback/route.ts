@@ -1,4 +1,4 @@
-import { NextResponse, type NextRequest } from "next/server";
+﻿import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
 export async function GET(request: NextRequest) {
@@ -35,12 +35,17 @@ export async function GET(request: NextRequest) {
       return response;
     }
     console.error("[atlas-app] Code exchange error:", error.message);
-    const astroUrl = process.env.NEXT_PUBLIC_ASTRO_URL ?? "http://localhost:4321";
-    return NextResponse.redirect(`${astroUrl}/?auth_error=${encodeURIComponent(error.message)}`);
+    return NextResponse.redirect(
+      `${origin}/signin?auth_error=${encodeURIComponent(error.message)}`
+    );
   }
 
-  // If no code, check if error was passed from provider
-  const errorMsg = searchParams.get("error_description") || searchParams.get("error") || "missing_code";
-  const astroUrl = process.env.NEXT_PUBLIC_ASTRO_URL ?? "http://localhost:4321";
-  return NextResponse.redirect(`${astroUrl}/?auth_error=${encodeURIComponent(errorMsg)}`);
+  // No code — surface any provider-level error
+  const errorMsg =
+    searchParams.get("error_description") ||
+    searchParams.get("error") ||
+    "missing_code";
+  return NextResponse.redirect(
+    `${origin}/signin?auth_error=${encodeURIComponent(errorMsg)}`
+  );
 }

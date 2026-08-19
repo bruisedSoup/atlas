@@ -1,8 +1,12 @@
 ﻿import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { randomBytes } from "crypto";
 
 export async function GET(request: NextRequest) {
-  const { origin } = request.nextUrl;
+  const { origin, searchParams } = request.nextUrl;
+  const isDesktop = searchParams.get("desktop") === "true";
+  // nonce passed by Electron so it can poll for the token
+  const nonce = searchParams.get("nonce") ?? "";
   const cookieStore = request.cookies;
 
   let response = NextResponse.next();
@@ -28,10 +32,17 @@ export async function GET(request: NextRequest) {
     }
   );
 
+  // Build the callbackURL so it includes desktop + nonce flags
+  const callbackUrl = new URL(`${origin}/auth/callback`);
+  if (isDesktop) {
+    callbackUrl.searchParams.set("desktop", "true");
+    if (nonce) callbackUrl.searchParams.set("nonce", nonce);
+  }
+
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: {
-      redirectTo: `${origin}/auth/callback`,
+      redirectTo: callbackUrl.toString(),
       scopes: "openid email profile",
     },
   });

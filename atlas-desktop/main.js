@@ -1,5 +1,6 @@
-const { app, BrowserWindow, shell, session } = require('electron');
+﻿const { app, BrowserWindow, shell } = require('electron');
 const path = require('path');
+const { randomBytes } = require('crypto');
 
 // Load .env if present
 try {
@@ -10,8 +11,51 @@ try {
 
 const ATLAS_WEB_URL = process.env.ATLAS_WEB_URL || 'http://localhost:3000';
 
+let mainWindow;
+
+// Generate a one-time nonce per sign-in attempt so Electron can poll for it
+let currentNonce = null;
+let pollInterval = null;
+
+function generateNonce() {
+  return randomBytes(16).toString('hex');
+}
+
+function startPolling(nonce) {
+  if (pollInterval) clearInterval(pollInterval);
+  currentNonce = nonce;
+
+  pollInterval = setInterval(async () => {
+    try {
+      const res = await fetch(`${ATLAS_WEB_URL}/api/auth/desktop-status?nonce=${nonce}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.ready && data.refresh_token) {
+        clearInterval(pollInterval);
+        pollInterval = null;
+        currentNonce = null;
+        // Navigate the Electron webview to the sync route to establish session cookies
+        if (mainWindow) {
+          mainWindow.loadURL(`${ATLAS_WEB_URL}/auth/desktop-sync?refresh_token=${encodeURIComponent(data.refresh_token)}`);
+          mainWindow.focus();
+        }
+      }
+    } catch (e) {
+      // Network error, will retry
+    }
+  }, 1500); // Poll every 1.5 seconds
+
+  // Stop polling after 5 minutes to avoid leaking resources
+  setTimeout(() => {
+    if (pollInterval) {
+      clearInterval(pollInterval);
+      pollInterval = null;
+    }
+  }, 5 * 60 * 1000);
+}
+
 function createWindow() {
-  const mainWindow = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 1280,
     height: 840,
     minWidth: 900,
@@ -44,13 +88,25 @@ function createWindow() {
     mainWindow.show();
   });
 
-  // Allow external navigation in default browser if needed, or handle popups
+  // Intercept /auth/login navigation — open in system browser with desktop+nonce flags
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+    if (url.includes('/auth/login')) {
+      event.preventDefault();
+      const nonce = generateNonce();
+      const targetUrl = new URL(url);
+      targetUrl.searchParams.set('desktop', 'true');
+      targetUrl.searchParams.set('nonce', nonce);
+      shell.openExternal(targetUrl.toString());
+      // Start polling the status endpoint for this nonce
+      startPolling(nonce);
+    }
+  });
+
+  // Handle cases where the link opens in a new window/tab (e.g. target="_blank")
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    // If it's OAuth or internal route, let it open or redirect in window
-    if (url.startsWith(ATLAS_WEB_URL) || url.includes('accounts.google.com') || url.includes('supabase.co')) {
+    if (url.startsWith(ATLAS_WEB_URL)) {
       return { action: 'allow' };
     }
-    // Otherwise open in user's default browser
     shell.openExternal(url);
     return { action: 'deny' };
   });

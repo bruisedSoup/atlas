@@ -5,7 +5,7 @@
  * 1. Refresh the Supabase session (keeps the auth cookie alive).
  * 2. Redirect unauthenticated users to /signin (same Next.js origin).
  *
- * Public routes (no auth required): /, /signin, /auth/*
+ * Public routes (no auth required): /, /signin, /auth/*, /api/auth/desktop-status
  * Protected routes: /dashboard, /thevault, and anything else not listed above.
  */
 
@@ -17,6 +17,9 @@ const PUBLIC_PATHS = [
   "/signin",
   "/auth/callback",
   "/auth/login",
+  "/auth/desktop-success",
+  "/auth/desktop-sync",
+  "/api/auth/desktop-status",
   "/manifest.webmanifest",
   "/manifest.json",
   "/apple-touch-icon.png",
@@ -50,7 +53,7 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  // IMPORTANT: getUser() must be called to refresh the session — do not skip.
+  // IMPORTANT: getUser() must be called to refresh the session - do not skip.
   const {
     data: { user },
   } = await supabase.auth.getUser();

@@ -4,6 +4,8 @@ import { createServerClient } from "@supabase/ssr";
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = request.nextUrl;
   const code = searchParams.get("code");
+  const isDesktop = searchParams.get("desktop") === "true";
+  const nonce = searchParams.get("nonce") ?? "";
   const next = searchParams.get("next") ?? "/dashboard";
 
   if (code) {
@@ -30,8 +32,15 @@ export async function GET(request: NextRequest) {
       }
     );
 
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
+      if (isDesktop) {
+        const refreshToken = data?.session?.refresh_token ?? "";
+        const successUrl = new URL(`${origin}/auth/desktop-success`);
+        successUrl.searchParams.set("refresh_token", refreshToken);
+        if (nonce) successUrl.searchParams.set("nonce", nonce);
+        return NextResponse.redirect(successUrl.toString());
+      }
       return response;
     }
     console.error("[atlas-app] Code exchange error:", error.message);
@@ -40,7 +49,7 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  // No code — surface any provider-level error
+  // No code - surface any provider-level error
   const errorMsg =
     searchParams.get("error_description") ||
     searchParams.get("error") ||

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React from "react";
 import { TaskItem } from "@/app/src/pages/dashboard/components/TodoList";
@@ -106,7 +106,6 @@ export function VaultTodoList({
             padding: "54px 0",
           }}
         >
-          {/* Empty state cat illustration matching mockup */}
           <img
             src="/empty.png"
             alt="Sleepy Cat - No completed tasks"
@@ -128,6 +127,7 @@ export function VaultTodoList({
         <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
           {tasks.map((task, idx) => {
             const pinColor = task.color || getRandomPushpinColor(task.id || idx);
+            const isPendingSync = task._sync_status === "pending_sync" || task.id.startsWith("temp_");
 
             return (
               <div
@@ -158,16 +158,52 @@ export function VaultTodoList({
                 <div style={{ display: "flex", alignItems: "center", gap: "16px", flex: 1, minWidth: 0 }}>
                   <PushpinIcon color={pinColor} size={28} />
                   <div>
-                    <span
-                      style={{
-                        fontFamily: "'EB Garamond', Georgia, serif",
-                        fontSize: "1.1rem",
-                        color: "#111827",
-                        display: "block",
-                      }}
-                    >
-                      {task.title}
-                    </span>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <span
+                        style={{
+                          fontFamily: "'EB Garamond', Georgia, serif",
+                          fontSize: "1.1rem",
+                          color: "#111827",
+                          display: "block",
+                        }}
+                      >
+                        {task.title}
+                      </span>
+                      {isPendingSync && (
+                        <span
+                          title="Saved locally — will sync to cloud when connected"
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "4px",
+                            padding: "2px 7px",
+                            borderRadius: "9999px",
+                            background: "#fffbeb",
+                            border: "1px solid #fef3c7",
+                            color: "#d97706",
+                            fontSize: "0.7rem",
+                            fontWeight: 500,
+                            fontFamily: "'Inter', sans-serif",
+                            flexShrink: 0,
+                          }}
+                        >
+                          <svg
+                            width="11"
+                            height="11"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2.4"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" />
+                            <polyline points="12 13 12 9 14 11" />
+                          </svg>
+                          <span>Syncing</span>
+                        </span>
+                      )}
+                    </div>
                     {task.deadline_date && (
                       <span style={{ fontSize: "0.75rem", color: "#9ca3af", fontFamily: "'Inter', sans-serif" }}>
                         Completed • Due {task.deadline_date}

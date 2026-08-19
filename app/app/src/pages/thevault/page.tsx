@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useEffect, useCallback } from "react";
 import { Sidebar } from "@/app/src/components/Sidebar";
@@ -8,6 +8,13 @@ import { VaultTodoList } from "./components/VaultTodoList";
 import { VaultTaskViewModal } from "./modals/VaultTaskViewModal";
 import { useUser } from "@/app/context/UserContext";
 import { realtimeService } from "@/app/src/services/realtime";
+import {
+  getCachedVaultTasks,
+  setCachedVaultTasks,
+  deleteLocalTask,
+  enqueueAction,
+} from "@/app/src/services/offlineStorage";
+import { syncManager } from "@/app/src/services/syncManager";
 
 export default function TheVaultPage() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -20,17 +27,19 @@ export default function TheVaultPage() {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
   useEffect(() => {
-    // 0ms instant cache load
-    try {
-      const cached = localStorage.getItem("atlas_cached_vault_tasks");
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setCompletedTasks(parsed);
+    // 0ms instant cache load from IndexedDB
+    async function loadVaultCache() {
+      try {
+        const cached = await getCachedVaultTasks();
+        if (cached && cached.length > 0) {
+          setCompletedTasks(cached);
           setLoading(false);
         }
+      } catch (err) {
+        console.warn("Failed to load vault cache from IDB:", err);
       }
-    } catch {}
+    }
+    loadVaultCache();
   }, []);
 
   // Fetch Completed Tasks
@@ -39,20 +48,20 @@ export default function TheVaultPage() {
     if (!token) return;
     try {
       const res = await fetch(`${apiUrl}/api/tasks/?status=done`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
         const data = await res.json();
-        const items = Array.isArray(data) ? data : data.results || [];
+        const items: TaskItem[] = Array.isArray(data) ? data : data.results || [];
         setCompletedTasks(items);
-        try {
-          localStorage.setItem("atlas_cached_vault_tasks", JSON.stringify(items));
-        } catch {}
+        await setCachedVaultTasks(items);
       }
     } catch (err) {
-      console.error("Failed to fetch completed tasks:", err);
+      console.warn("Failed to fetch completed tasks from server, using IDB cache:", err);
+      const cached = await getCachedVaultTasks();
+      if (cached.length > 0) {
+        setCompletedTasks(cached);
+      }
     } finally {
       setLoading(false);
     }
@@ -92,46 +101,23 @@ export default function TheVaultPage() {
     };
   }, [accessToken, fetchCompletedTasks]);
 
-  // Restore Task to Work Hub
+  // Restore Task to Work Hub (Optimistic UI + Offline sync)
   const handleRestoreTask = async (taskId: string) => {
-    const token = await getFreshToken();
-    if (!token) return;
     setSelectedTaskForView(null);
     setCompletedTasks((prev) => prev.filter((t) => t.id !== taskId));
 
-    try {
-      await fetch(`${apiUrl}/api/tasks/${taskId}/`, {
-        method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ status: "ongoing" }),
-      });
-    } catch (err) {
-      console.error("Failed to restore task:", err);
-      fetchCompletedTasks();
-    }
+    await enqueueAction("UPDATE", { status: "ongoing" }, undefined, taskId);
+    syncManager.triggerSync();
   };
 
-  // Permanently Delete Task
+  // Permanently Delete Task (Optimistic UI + Offline sync)
   const handleDeleteTask = async (taskId: string) => {
-    const token = await getFreshToken();
-    if (!token) return;
     setSelectedTaskForView(null);
     setCompletedTasks((prev) => prev.filter((t) => t.id !== taskId));
 
-    try {
-      await fetch(`${apiUrl}/api/tasks/${taskId}/`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-    } catch (err) {
-      console.error("Failed to delete task:", err);
-      fetchCompletedTasks();
-    }
+    await deleteLocalTask(taskId);
+    await enqueueAction("DELETE", {}, undefined, taskId);
+    syncManager.triggerSync();
   };
 
   // Filter tasks based on activeTimeFilter (All, This Week, This Month, This Semester)

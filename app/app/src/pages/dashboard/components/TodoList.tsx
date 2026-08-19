@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useRef, useEffect } from "react";
 import { PushpinIcon, getRandomPushpinColor } from "@/app/src/components/PushpinIcon";
@@ -9,12 +9,16 @@ export interface TaskItem {
   title: string;
   description?: string;
   label_type?: "custom" | "course";
+  custom_label?: string;
   status?: "ongoing" | "done" | "completed" | "missed" | "archived";
   deadline_date?: string | null;
   deadline_time?: string | null;
   notify_before_deadline?: boolean;
   color?: string;
   course?: string | null;
+  course_detail?: { id: string; course_name: string; course_code?: string; color?: string } | null;
+  _sync_status?: "pending_sync" | "synced";
+  _temp_id?: string;
 }
 
 export type FilterStatus = "ongoing" | "missed" | "completed";
@@ -29,6 +33,7 @@ interface TodoListProps {
   onRefresh: () => void;
   loading?: boolean;
   missedCount?: number;
+  isOnline?: boolean;
 }
 
 export function TodoList({
@@ -41,6 +46,7 @@ export function TodoList({
   onRefresh,
   loading = false,
   missedCount = 0,
+  isOnline = true,
 }: TodoListProps) {
   const [checkingId, setCheckingId] = useState<string | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -244,7 +250,7 @@ export function TodoList({
                         fontSize: "0.95rem",
                         fontWeight: 500,
                         color: optColor,
-                        transition: "background 0.15s ease",
+                        transition: "all 0.15s ease",
                       }}
                       onMouseEnter={(e) => {
                         if (!isSelected) e.currentTarget.style.backgroundColor = "#f3f4f6";
@@ -368,6 +374,7 @@ export function TodoList({
           {tasks.map((task, idx) => {
             const isChecked = checkingId === task.id || task.status === "done" || task.status === "completed";
             const pinColor = task.color || getRandomPushpinColor(task.id || idx);
+            const isPendingSync = task._sync_status === "pending_sync" || task.id.startsWith("temp_");
 
             return (
               <div
@@ -395,7 +402,7 @@ export function TodoList({
                   e.currentTarget.style.boxShadow = "0 1px 2px rgba(0,0,0,0.02)";
                 }}
               >
-                {/* Left: Pushpin + Title */}
+                {/* Left: Pushpin + Title + Optional Sync Indicator */}
                 <div style={{ display: "flex", alignItems: "center", gap: "14px", flex: 1, minWidth: 0 }}>
                   <PushpinIcon color={pinColor} size={28} />
                   <span
@@ -410,6 +417,43 @@ export function TodoList({
                   >
                     {task.title}
                   </span>
+
+                  {/* Subtle Per-Task Pending Sync Cloud Indicator */}
+                  {isPendingSync && (
+                    <span
+                      title="Saved locally — will sync to cloud when connected"
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "4px",
+                        padding: "2px 7px",
+                        borderRadius: "9999px",
+                        background: "#fffbeb",
+                        border: "1px solid #fef3c7",
+                        color: "#d97706",
+                        fontSize: "0.7rem",
+                        fontWeight: 500,
+                        fontFamily: "'Inter', sans-serif",
+                        flexShrink: 0,
+                        marginLeft: "4px",
+                      }}
+                    >
+                      <svg
+                        width="11"
+                        height="11"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.4"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" />
+                        <polyline points="12 13 12 9 14 11" />
+                      </svg>
+                      <span>Syncing</span>
+                    </span>
+                  )}
                 </div>
 
                 {/* Right: Checkbox Container */}

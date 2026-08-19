@@ -1,0 +1,46 @@
+{
+  "name": "atlas-desktop",
+  "version": "0.1.0",
+  "description": "Desktop client for Atlas",
+  "author": "Atlas",
+  "main": "main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron .",
+    "build:dir": "cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --win --dir",
+    "dist": "cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --win"
+  },
+  "build": {
+    "appId": "com.atlas.desktop",
+    "productName": "Atlas",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "assets/**/*",
+      "package.json"
+    ],
+    "win": {
+      "sign": null,
+      "target": [
+        "dir",
+        "nsis"
+      ],
+      "icon": "assets/icon.png"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false
+    }
+  },
+  "devDependencies": {
+    "cross-env": "^7.0.3",
+    "dotenv": "^16.4.7",
+    "electron": "^34.0.0",
+    "electron-builder": "^25.1.8"
+  }
+}

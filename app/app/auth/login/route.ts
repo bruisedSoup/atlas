@@ -1,4 +1,4 @@
-import { NextResponse, type NextRequest } from "next/server";
+﻿import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
 export async function GET(request: NextRequest) {
@@ -38,11 +38,12 @@ export async function GET(request: NextRequest) {
 
   if (error || !data.url) {
     console.error("[atlas-app] /auth/login error:", error?.message);
-    const astroUrl = process.env.NEXT_PUBLIC_ASTRO_URL ?? "http://localhost:4321";
-    return NextResponse.redirect(`${astroUrl}/?auth_error=${encodeURIComponent(error?.message ?? "oauth_init_failed")}`);
+    return NextResponse.redirect(
+      `${origin}/signin?auth_error=${encodeURIComponent(error?.message ?? "oauth_init_failed")}`
+    );
   }
 
-  // Create redirect response to Google and preserve any set-cookie headers (PKCE verifier)
+  // Redirect to Google and preserve any set-cookie headers (PKCE verifier)
   const redirectResponse = NextResponse.redirect(data.url, 302);
   response.cookies.getAll().forEach((c) => {
     redirectResponse.cookies.set(c.name, c.value);

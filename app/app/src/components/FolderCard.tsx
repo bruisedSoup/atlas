@@ -53,7 +53,7 @@ interface FolderCardProps {
 
 export function FolderCard({
   color = "purple",
-  courseName = "Course Code",
+  courseName = "",
   courseCode,
   instructor,
   room,
@@ -64,7 +64,7 @@ export function FolderCard({
   style = {},
 }: FolderCardProps) {
   const theme = getFolderTheme(color);
-  const displayText = courseCode || courseName || "Course Code";
+  const displayText = courseCode || courseName || "";
 
   // Dimensions based on size
   const dimensions = {
@@ -77,7 +77,7 @@ export function FolderCard({
     <div
       onClick={interactive ? onClick : undefined}
       className={className}
-      title={interactive ? `Click to view or edit ${courseName}` : undefined}
+      title={interactive ? `Click to view or edit ${courseName || displayText || theme.name}` : undefined}
       style={{
         position: "relative",
         display: "inline-flex",
@@ -107,7 +107,7 @@ export function FolderCard({
       {/* Folder Graphic */}
       <img
         src={theme.imageSrc}
-        alt={`${theme.name} Folder - ${courseName}`}
+        alt={`${theme.name} Folder - ${displayText || courseName}`}
         style={{
           width: "100%",
           height: "auto",
@@ -121,37 +121,39 @@ export function FolderCard({
         }}
       />
 
-      {/* Label Text Overlaid on Folder Surface */}
-      <div
-        style={{
-          position: "absolute",
-          right: "12%",
-          bottom: "9%",
-          left: "20%",
-          textAlign: "right",
-          overflow: "hidden",
-          textOverflow: "ellipsis",
-          whiteSpace: "nowrap",
-          pointerEvents: "none",
-        }}
-      >
-        <span
+      {/* Label Text Overlaid on Folder Surface - Only if displayText exists */}
+      {displayText.trim() ? (
+        <div
           style={{
-            fontFamily: "'Inter', sans-serif",
-            fontSize: dimensions.fontSize,
-            fontWeight: 400,
-            color: "#18181b",
-            letterSpacing: "-0.01em",
-            display: "inline-block",
-            maxWidth: "100%",
+            position: "absolute",
+            right: "12%",
+            bottom: "9%",
+            left: "20%",
+            textAlign: "right",
             overflow: "hidden",
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",
+            pointerEvents: "none",
           }}
         >
-          {displayText}
-        </span>
-      </div>
+          <span
+            style={{
+              fontFamily: "'Inter', sans-serif",
+              fontSize: dimensions.fontSize,
+              fontWeight: 400,
+              color: "#18181b",
+              letterSpacing: "-0.01em",
+              display: "inline-block",
+              maxWidth: "100%",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {displayText}
+          </span>
+        </div>
+      ) : null}
     </div>
   );
 }

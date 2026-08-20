@@ -246,8 +246,8 @@ export function CourseModal({
           <div style={{ width: "110px", height: "78px" }}>
             <FolderCard
               color={selectedColor}
-              courseName={courseCode || courseName || "Course Code"}
-              courseCode={courseCode || courseName || "Course Code"}
+              courseName={courseCode || courseName || ""}
+              courseCode={courseCode || courseName || ""}
               interactive={false}
               size="sm"
             />
@@ -272,16 +272,14 @@ export function CourseModal({
                   onClick={() => setSelectedColor(theme.id)}
                   title={theme.name}
                   style={{
-                    width: "20px",
-                    height: "20px",
+                    width: "22px",
+                    height: "22px",
                     borderRadius: "50%",
                     backgroundColor: theme.colorHex,
-                    border: isSelected ? "1.5px solid #111827" : "1px solid rgba(0,0,0,0.12)",
-                    boxShadow: isSelected
-                      ? "0 0 0 2px #ffffff, 0 0 0 3.5px #111827"
-                      : "0 1px 2px rgba(0,0,0,0.06)",
+                    border: isSelected ? "2px solid #111827" : "1px solid rgba(0,0,0,0.12)",
+                    boxShadow: "none",
                     cursor: "pointer",
-                    transform: isSelected ? "scale(1.15)" : "scale(1)",
+                    transform: isSelected ? "scale(1.18)" : "scale(1)",
                     transition: "all 0.15s ease",
                     padding: 0,
                   }}

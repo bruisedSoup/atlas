@@ -22,7 +22,6 @@ export default async function HomePage() {
           return cookieStore.getAll();
         },
         setAll() {
-          // read-only in Server Component — no-op
         },
       },
     }

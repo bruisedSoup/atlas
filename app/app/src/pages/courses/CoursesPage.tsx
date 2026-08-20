@@ -7,7 +7,11 @@ import { CourseFolderGrid, CourseData } from "./components/CourseFolderGrid";
 import { CourseModal } from "./modals/CourseModal";
 import { useUser } from "@/app/context/UserContext";
 
-export default function CoursesPage() {
+interface CoursesPageProps {
+  onTabChange?: (tab: string) => void;
+}
+
+export default function CoursesPage({ onTabChange }: CoursesPageProps = {}) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [courses, setCourses] = useState<CourseData[]>([]);
   const [activeFilter, setActiveFilter] = useState("All");

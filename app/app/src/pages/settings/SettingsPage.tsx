@@ -5,7 +5,11 @@ import { Sidebar } from "@/app/src/components/Sidebar";
 import { UserProfileCard } from "@/app/src/components/UserProfileCard";
 import { useUser } from "@/app/context/UserContext";
 
-export default function SettingsPage() {
+interface SettingsPageProps {
+  onTabChange?: (tab: string) => void;
+}
+
+export default function SettingsPage({ onTabChange }: SettingsPageProps = {}) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [activeCategory, setActiveCategory] = useState<"General" | "Notifications" | "Integrations" | "Account">("General");
   const { openProfileModal, userProfile } = useUser();

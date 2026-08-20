@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState, useEffect, useCallback } from "react";
 import { Sidebar } from "@/app/src/components/Sidebar";
@@ -18,7 +18,11 @@ import {
 } from "@/app/src/services/offlineStorage";
 import { syncManager } from "@/app/src/services/syncManager";
 
-export default function DashboardPage() {
+interface DashboardPageProps {
+  onTabChange?: (tab: string) => void;
+}
+
+export default function DashboardPage({ onTabChange }: DashboardPageProps = {}) {
   const [activeTab, setActiveTab] = useState("work-hub");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [tasks, setTasks] = useState<TaskItem[]>([]);

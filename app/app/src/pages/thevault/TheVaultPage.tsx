@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState, useEffect, useCallback } from "react";
 import { Sidebar } from "@/app/src/components/Sidebar";
@@ -16,7 +16,11 @@ import {
 } from "@/app/src/services/offlineStorage";
 import { syncManager } from "@/app/src/services/syncManager";
 
-export default function TheVaultPage() {
+interface TheVaultPageProps {
+  onTabChange?: (tab: string) => void;
+}
+
+export default function TheVaultPage({ onTabChange }: TheVaultPageProps = {}) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [completedTasks, setCompletedTasks] = useState<TaskItem[]>([]);
   const [activeTimeFilter, setActiveTimeFilter] = useState<VaultTimeFilter>("All");

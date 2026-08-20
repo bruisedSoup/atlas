@@ -48,19 +48,23 @@ interface MainProps {
 export default function Main({ initialTab = "work-hub" }: MainProps) {
   const [currentTab, setCurrentTab] = useState<AtlasTab>(initialTab);
 
+  const handleTabChange = (tabId: string) => {
+    setCurrentTab(tabId as AtlasTab);
+  };
+
   switch (currentTab) {
     case "the-vault":
-      return <TheVaultPage />;
+      return <TheVaultPage onTabChange={handleTabChange} />;
     case "courses":
-      return <CoursesPage />;
+      return <CoursesPage onTabChange={handleTabChange} />;
     case "calendar":
-      return <CalendarPage />;
+      return <CalendarPage onTabChange={handleTabChange} />;
     case "schedule":
-      return <SchedulePage />;
+      return <SchedulePage onTabChange={handleTabChange} />;
     case "settings":
-      return <SettingsPage />;
+      return <SettingsPage onTabChange={handleTabChange} />;
     case "work-hub":
     default:
-      return <DashboardPage />;
+      return <DashboardPage onTabChange={handleTabChange} />;
   }
 }

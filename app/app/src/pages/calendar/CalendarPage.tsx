@@ -5,7 +5,11 @@ import { Sidebar } from "@/app/src/components/Sidebar";
 import { UserProfileCard } from "@/app/src/components/UserProfileCard";
 import { EmptyState } from "@/app/src/components/EmptyState";
 
-export default function CalendarPage() {
+interface CalendarPageProps {
+  onTabChange?: (tab: string) => void;
+}
+
+export default function CalendarPage({ onTabChange }: CalendarPageProps = {}) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [activeView, setActiveView] = useState<"Month" | "Week" | "Day" | "Agenda">("Month");
   const [currentDate, setCurrentDate] = useState(new Date());

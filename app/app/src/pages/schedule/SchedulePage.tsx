@@ -5,7 +5,11 @@ import { Sidebar } from "@/app/src/components/Sidebar";
 import { UserProfileCard } from "@/app/src/components/UserProfileCard";
 import { EmptyState } from "@/app/src/components/EmptyState";
 
-export default function SchedulePage() {
+interface SchedulePageProps {
+  onTabChange?: (tab: string) => void;
+}
+
+export default function SchedulePage({ onTabChange }: SchedulePageProps = {}) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [activeDay, setActiveDay] = useState("All");
 

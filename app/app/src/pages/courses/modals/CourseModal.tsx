@@ -218,7 +218,7 @@ export function CourseModal({
             fontStyle: "italic",
             fontWeight: 400,
             color: "#111827",
-            margin: "0 0 16px 0",
+            margin: "0 0 20px 0",
           }}
         >
           {mode === "register" ? "Register a course" : "Edit course"}
@@ -231,11 +231,11 @@ export function CourseModal({
             flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
-            margin: "4px 0 20px",
+            margin: "0 0 24px",
           }}
         >
           {/* Folder Card Preview */}
-          <div style={{ width: "115px", height: "82px", marginBottom: "18px" }}>
+          <div style={{ width: "120px", height: "86px", marginBottom: "22px" }}>
             <FolderCard
               color={selectedColor}
               courseName={courseCode || courseName || ""}
@@ -387,7 +387,7 @@ export function CourseModal({
             <input
               type="text"
               className="course-input-field"
-              placeholder="This is the description for task number 1"
+              placeholder="Room location"
               value={roomLocation}
               onChange={(e) => setRoomLocation(e.target.value)}
               style={{

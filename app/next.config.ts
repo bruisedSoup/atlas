@@ -12,6 +12,10 @@ const nextConfig: NextConfig = {
         source: "/thevault",
         destination: "/src/pages/thevault",
       },
+      {
+        source: "/courses",
+        destination: "/src/pages/courses",
+      },
     ];
   },
 };

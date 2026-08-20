@@ -24,6 +24,7 @@ interface CourseFolderGridProps {
   courses: CourseData[];
   onCourseClick: (course: CourseData) => void;
   onAddNewCourse: () => void;
+  onScanOCR?: () => void;
   loading?: boolean;
 }
 
@@ -31,6 +32,7 @@ export function CourseFolderGrid({
   courses = [],
   onCourseClick,
   onAddNewCourse,
+  onScanOCR,
   loading = false,
 }: CourseFolderGridProps) {
   const [searchQuery, setSearchQuery] = useState("");
@@ -193,6 +195,56 @@ export function CourseFolderGrid({
           >
             <line x1="12" y1="5" x2="12" y2="19" />
             <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+        </button>
+
+        {/* OCR Scan Button */}
+        <button
+          type="button"
+          onClick={onScanOCR}
+          title="Scan syllabus / schedule (OCR auto-fill)"
+          style={{
+            width: "48px",
+            height: "42px",
+            borderRadius: "21px",
+            background: "#ffffff",
+            color: "#111827",
+            border: "1.5px solid #111827",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+            boxShadow: "0 2px 6px rgba(0,0,0,0.06)",
+            transition: "transform 0.15s ease, background 0.15s ease",
+            flexShrink: 0,
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = "scale(1.05)";
+            e.currentTarget.style.background = "#f4f4f5";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = "scale(1)";
+            e.currentTarget.style.background = "#ffffff";
+          }}
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            {/* Viewfinder Corners */}
+            <path d="M3 7V5a2 2 0 0 1 2-2h2" />
+            <path d="M17 3h2a2 2 0 0 1 2 2v2" />
+            <path d="M21 17v2a2 2 0 0 1-2 2h-2" />
+            <path d="M3 17v2a2 2 0 0 1 2 2h2" />
+            {/* Inner Document Target */}
+            <rect x="7" y="7" width="10" height="10" rx="1.5" strokeWidth="1.5" />
+            <line x1="7" y1="12" x2="17" y2="12" strokeWidth="2" />
           </svg>
         </button>
       </div>

@@ -2,7 +2,7 @@
 
 import React, { useState, useRef } from "react";
 import { BackButton } from "@/app/src/components/BackButton";
-import { FolderCard, FolderColorKey, FOLDER_THEMES } from "@/app/src/components/FolderCard";
+import { FOLDER_THEMES, FolderColorKey } from "@/app/src/components/FolderCard";
 import { useUser } from "@/app/context/UserContext";
 
 export interface ParsedSchedule {
@@ -161,14 +161,33 @@ export function ScanCORModal({
     }
   };
 
-  const formatScheduleDisplay = (schedules: ParsedSchedule[]) => {
-    if (!schedules || schedules.length === 0) return "No schedule time";
-    return schedules
-      .map((s) => {
-        const days = Array.isArray(s.days) ? s.days.join(", ") : s.days;
-        return `${days} ${s.start_time} - ${s.end_time}${s.room_location ? ` (${s.room_location})` : ""}`;
-      })
-      .join(" • ");
+  const formatTime12h = (timeStr: string) => {
+    if (!timeStr) return "";
+    try {
+      const [hStr, mStr] = timeStr.split(":");
+      let h = parseInt(hStr, 10);
+      const m = mStr || "00";
+      const p = h >= 12 ? "PM" : "AM";
+      if (h === 0) h = 12;
+      else if (h > 12) h -= 12;
+      return `${h}:${m} ${p}`;
+    } catch {
+      return timeStr;
+    }
+  };
+
+  const formatScheduleTags = (schedules: ParsedSchedule[]) => {
+    if (!schedules || schedules.length === 0) return ["No schedule times found"];
+    return schedules.map((s) => {
+      const days = Array.isArray(s.days) ? s.days.join(", ") : s.days;
+      const t1 = formatTime12h(s.start_time);
+      const t2 = formatTime12h(s.end_time);
+      return `${days} ${t1} – ${t2}${s.room_location ? ` • ${s.room_location}` : ""}`;
+    });
+  };
+
+  const getFolderTheme = (colorKey: FolderColorKey) => {
+    return FOLDER_THEMES.find((t) => t.id === colorKey) || FOLDER_THEMES[0];
   };
 
   return (
@@ -194,42 +213,45 @@ export function ScanCORModal({
           color: "#111827",
           borderRadius: "16px",
           border: "1.5px solid #111827",
-          padding: "26px 34px 30px",
+          padding: "24px 28px 28px",
           boxShadow: "0 20px 40px rgba(0, 0, 0, 0.18)",
-          maxHeight: "92vh",
+          maxHeight: "90vh",
           overflowY: "auto",
           position: "relative",
           fontFamily: "'Inter', sans-serif",
         }}
       >
-        {/* Top Header */}
-        <div style={{ display: "flex", justifyContent: "flex-start", marginBottom: "4px" }}>
+        {/* Top Navigation Row */}
+        <div style={{ display: "flex", justifyContent: "flex-start", marginBottom: "6px" }}>
           <BackButton onClick={handleClose} label="Back" variant="blue" />
         </div>
 
+        {/* Modal Title */}
         <h2
           style={{
             textAlign: "center",
             fontFamily: "'EB Garamond', Georgia, serif",
             fontSize: "1.75rem",
             fontStyle: "italic",
-            fontWeight: 500,
+            fontWeight: 600,
             color: "#111827",
             margin: "0 0 4px 0",
           }}
         >
-          Auto-Fill Schedule & Courses (OCR)
+          {stage === "review" ? "Review Extracted Courses" : "Auto-Fill Schedule & Courses (OCR)"}
         </h2>
 
         <p
           style={{
             textAlign: "center",
-            fontSize: "0.86rem",
+            fontSize: "0.85rem",
             color: "#6b7280",
-            margin: "0 0 20px 0",
+            margin: "0 0 18px 0",
           }}
         >
-          Upload your Certificate of Registration (COR), student load, or syllabus photo
+          {stage === "review"
+            ? "Verify course details and schedules before importing to Atlas"
+            : "Upload your Certificate of Registration (COR), student load, or syllabus photo"}
         </p>
 
         {/* Double Line Divider */}
@@ -247,6 +269,7 @@ export function ScanCORModal({
               color: "#b91c1c",
               fontSize: "0.85rem",
               marginBottom: "16px",
+              fontWeight: 400,
             }}
           >
             {errorMsg}
@@ -288,9 +311,9 @@ export function ScanCORModal({
 
               <div
                 style={{
-                  width: "56px",
-                  height: "56px",
-                  borderRadius: "28px",
+                  width: "52px",
+                  height: "52px",
+                  borderRadius: "26px",
                   backgroundColor: "#e0f2fe",
                   color: "#0284c7",
                   display: "flex",
@@ -299,7 +322,7 @@ export function ScanCORModal({
                   marginBottom: "12px",
                 }}
               >
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                   <polyline points="17 8 12 3 7 8" />
                   <line x1="12" y1="3" x2="12" y2="15" />
@@ -307,14 +330,14 @@ export function ScanCORModal({
               </div>
 
               <p style={{ margin: "0 0 4px 0", fontWeight: 500, fontSize: "0.95rem", color: "#111827" }}>
-                Click to upload or drag & drop
+                Click to upload or drag & drop document
               </p>
               <p style={{ margin: 0, fontSize: "0.82rem", color: "#6b7280" }}>
                 Supports PDF, PNG, JPG, or JPEG
               </p>
             </div>
 
-            {/* Quick Sample Button */}
+            {/* Sample Button */}
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
               <button
                 type="button"
@@ -322,7 +345,7 @@ export function ScanCORModal({
                 style={{
                   padding: "8px 20px",
                   borderRadius: "8px",
-                  border: "1.5px solid #374151",
+                  border: "1.5px solid #111827",
                   backgroundColor: "#ffffff",
                   color: "#111827",
                   fontSize: "0.85rem",
@@ -332,7 +355,10 @@ export function ScanCORModal({
                   alignItems: "center",
                   gap: "8px",
                   boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+                  transition: "background 0.15s ease",
                 }}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f4f4f5")}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#ffffff")}
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
@@ -347,7 +373,7 @@ export function ScanCORModal({
           </div>
         )}
 
-        {/* STAGE 2: Scanning & Processing State */}
+        {/* STAGE 2: Scanning State */}
         {stage === "scanning" && (
           <div
             style={{
@@ -360,8 +386,8 @@ export function ScanCORModal({
           >
             <div
               style={{
-                width: "60px",
-                height: "60px",
+                width: "56px",
+                height: "56px",
                 borderRadius: "50%",
                 border: "3px solid #e5e7eb",
                 borderTopColor: "#111827",
@@ -417,6 +443,7 @@ export function ScanCORModal({
                   fontSize: "0.82rem",
                   cursor: "pointer",
                   textDecoration: "underline",
+                  fontFamily: "'Inter', sans-serif",
                 }}
               >
                 Scan another document
@@ -428,143 +455,261 @@ export function ScanCORModal({
               style={{
                 display: "flex",
                 flexDirection: "column",
-                gap: "12px",
-                maxHeight: "360px",
+                gap: "14px",
+                maxHeight: "380px",
                 overflowY: "auto",
-                paddingRight: "4px",
+                paddingRight: "6px",
                 marginBottom: "22px",
               }}
             >
-              {extractedCourses.map((item, idx) => (
-                <div
-                  key={item.id || idx}
-                  style={{
-                    border: "1.5px solid #e5e7eb",
-                    borderRadius: "12px",
-                    padding: "14px 16px",
-                    backgroundColor: "#fcfcfc",
-                    display: "flex",
-                    alignItems: "flex-start",
-                    gap: "14px",
-                    position: "relative",
-                  }}
-                >
-                  {/* Folder Thumbnail */}
-                  <div style={{ width: "68px", flexShrink: 0, marginTop: "2px" }}>
-                    <FolderCard
-                      color={item.color}
-                      courseName={item.course_code || item.course_name}
-                      interactive={false}
-                      size="sm"
-                    />
-                  </div>
+              {extractedCourses.map((item, idx) => {
+                const theme = getFolderTheme(item.color);
+                const scheduleTags = formatScheduleTags(item.schedules);
 
-                  {/* Form inputs */}
-                  <div style={{ flex: 1, display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
-                    <div>
-                      <label style={{ fontSize: "0.72rem", color: "#6b7280", display: "block" }}>Course Code</label>
-                      <input
-                        type="text"
-                        value={item.course_code}
-                        onChange={(e) => handleFieldChange(idx, "course_code", e.target.value)}
-                        style={{
-                          width: "100%",
-                          height: "30px",
-                          padding: "0 8px",
-                          borderRadius: "6px",
-                          border: "1px solid #d1d5db",
-                          fontSize: "0.85rem",
-                          fontWeight: 500,
-                          backgroundColor: "#ffffff",
-                        }}
-                      />
-                    </div>
-
-                    <div>
-                      <label style={{ fontSize: "0.72rem", color: "#6b7280", display: "block" }}>Course Title</label>
-                      <input
-                        type="text"
-                        value={item.course_name}
-                        onChange={(e) => handleFieldChange(idx, "course_name", e.target.value)}
-                        style={{
-                          width: "100%",
-                          height: "30px",
-                          padding: "0 8px",
-                          borderRadius: "6px",
-                          border: "1px solid #d1d5db",
-                          fontSize: "0.85rem",
-                          backgroundColor: "#ffffff",
-                        }}
-                      />
-                    </div>
-
-                    <div>
-                      <label style={{ fontSize: "0.72rem", color: "#6b7280", display: "block" }}>Room Location</label>
-                      <input
-                        type="text"
-                        value={item.room_location}
-                        onChange={(e) => handleFieldChange(idx, "room_location", e.target.value)}
-                        placeholder="Room Location"
-                        style={{
-                          width: "100%",
-                          height: "30px",
-                          padding: "0 8px",
-                          borderRadius: "6px",
-                          border: "1px solid #d1d5db",
-                          fontSize: "0.85rem",
-                          backgroundColor: "#ffffff",
-                        }}
-                      />
-                    </div>
-
-                    <div>
-                      <label style={{ fontSize: "0.72rem", color: "#6b7280", display: "block" }}>Instructor</label>
-                      <input
-                        type="text"
-                        value={item.instructor_name}
-                        onChange={(e) => handleFieldChange(idx, "instructor_name", e.target.value)}
-                        placeholder="Instructor name"
-                        style={{
-                          width: "100%",
-                          height: "30px",
-                          padding: "0 8px",
-                          borderRadius: "6px",
-                          border: "1px solid #d1d5db",
-                          fontSize: "0.85rem",
-                          backgroundColor: "#ffffff",
-                        }}
-                      />
-                    </div>
-
-                    {/* Schedule info badge */}
-                    <div style={{ gridColumn: "span 2", marginTop: "2px" }}>
-                      <span style={{ fontSize: "0.75rem", color: "#4b5563" }}>
-                        <strong>Schedule:</strong> {formatScheduleDisplay(item.schedules)}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Remove Button */}
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveItem(idx)}
-                    title="Remove from import"
+                return (
+                  <div
+                    key={item.id || idx}
                     style={{
-                      border: "none",
-                      backgroundColor: "transparent",
-                      color: "#9ca3af",
-                      cursor: "pointer",
-                      fontSize: "1rem",
-                      padding: "2px 6px",
+                      border: "1.5px solid #111827",
+                      borderRadius: "12px",
+                      padding: "14px 16px",
+                      backgroundColor: "#ffffff",
+                      boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
                     }}
                   >
-                    ✕
-                  </button>
-                </div>
-              ))}
+                    {/* Card Header Row */}
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        marginBottom: "10px",
+                        paddingBottom: "8px",
+                        borderBottom: "1px solid #f3f4f6",
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                        {/* Folder Color Swatch */}
+                        <div
+                          title={`Color: ${theme.name}`}
+                          style={{
+                            width: "16px",
+                            height: "16px",
+                            borderRadius: "50%",
+                            backgroundColor: theme.colorHex,
+                            border: "1.5px solid #111827",
+                            flexShrink: 0,
+                          }}
+                        />
+                        <span
+                          style={{
+                            fontFamily: "'EB Garamond', Georgia, serif",
+                            fontSize: "1.05rem",
+                            fontWeight: 600,
+                            color: "#111827",
+                          }}
+                        >
+                          {item.course_code || "Course"} — {item.course_name || "Untitled"}
+                        </span>
+                      </div>
+
+                      {/* Remove Button */}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveItem(idx)}
+                        title="Remove from import"
+                        style={{
+                          width: "24px",
+                          height: "24px",
+                          borderRadius: "12px",
+                          border: "none",
+                          backgroundColor: "#f3f4f6",
+                          color: "#6b7280",
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: "0.85rem",
+                          lineHeight: 1,
+                          transition: "all 0.15s ease",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = "#fee2e2";
+                          e.currentTarget.style.color = "#b91c1c";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = "#f3f4f6";
+                          e.currentTarget.style.color = "#6b7280";
+                        }}
+                      >
+                        ✕
+                      </button>
+                    </div>
+
+                    {/* 2x2 Form Input Fields */}
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "1fr 1fr",
+                        gap: "10px",
+                        marginBottom: "10px",
+                      }}
+                    >
+                      {/* Course Code */}
+                      <div>
+                        <label
+                          style={{
+                            fontSize: "0.75rem",
+                            fontWeight: 500,
+                            color: "#374151",
+                            display: "block",
+                            marginBottom: "3px",
+                          }}
+                        >
+                          Course Code
+                        </label>
+                        <input
+                          type="text"
+                          value={item.course_code}
+                          onChange={(e) => handleFieldChange(idx, "course_code", e.target.value)}
+                          style={{
+                            width: "100%",
+                            height: "34px",
+                            padding: "0 10px",
+                            borderRadius: "8px",
+                            border: "1.5px solid #111827",
+                            fontSize: "0.85rem",
+                            fontWeight: 500,
+                            backgroundColor: "#ffffff",
+                            color: "#111827",
+                            boxSizing: "border-box",
+                          }}
+                        />
+                      </div>
+
+                      {/* Course Title */}
+                      <div>
+                        <label
+                          style={{
+                            fontSize: "0.75rem",
+                            fontWeight: 500,
+                            color: "#374151",
+                            display: "block",
+                            marginBottom: "3px",
+                          }}
+                        >
+                          Course Title
+                        </label>
+                        <input
+                          type="text"
+                          value={item.course_name}
+                          onChange={(e) => handleFieldChange(idx, "course_name", e.target.value)}
+                          style={{
+                            width: "100%",
+                            height: "34px",
+                            padding: "0 10px",
+                            borderRadius: "8px",
+                            border: "1.5px solid #111827",
+                            fontSize: "0.85rem",
+                            backgroundColor: "#ffffff",
+                            color: "#111827",
+                            boxSizing: "border-box",
+                          }}
+                        />
+                      </div>
+
+                      {/* Room Location */}
+                      <div>
+                        <label
+                          style={{
+                            fontSize: "0.75rem",
+                            fontWeight: 500,
+                            color: "#374151",
+                            display: "block",
+                            marginBottom: "3px",
+                          }}
+                        >
+                          Room Location
+                        </label>
+                        <input
+                          type="text"
+                          value={item.room_location}
+                          onChange={(e) => handleFieldChange(idx, "room_location", e.target.value)}
+                          placeholder="Room / Building"
+                          style={{
+                            width: "100%",
+                            height: "34px",
+                            padding: "0 10px",
+                            borderRadius: "8px",
+                            border: "1.5px solid #111827",
+                            fontSize: "0.85rem",
+                            backgroundColor: "#ffffff",
+                            color: "#111827",
+                            boxSizing: "border-box",
+                          }}
+                        />
+                      </div>
+
+                      {/* Instructor */}
+                      <div>
+                        <label
+                          style={{
+                            fontSize: "0.75rem",
+                            fontWeight: 500,
+                            color: "#374151",
+                            display: "block",
+                            marginBottom: "3px",
+                          }}
+                        >
+                          Instructor
+                        </label>
+                        <input
+                          type="text"
+                          value={item.instructor_name}
+                          onChange={(e) => handleFieldChange(idx, "instructor_name", e.target.value)}
+                          placeholder="Instructor name"
+                          style={{
+                            width: "100%",
+                            height: "34px",
+                            padding: "0 10px",
+                            borderRadius: "8px",
+                            border: "1.5px solid #111827",
+                            fontSize: "0.85rem",
+                            backgroundColor: "#ffffff",
+                            color: "#111827",
+                            boxSizing: "border-box",
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Schedule Tags List */}
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                      {scheduleTags.map((tag, tIdx) => (
+                        <span
+                          key={tIdx}
+                          style={{
+                            padding: "3px 10px",
+                            borderRadius: "6px",
+                            backgroundColor: "#f3f4f6",
+                            color: "#374151",
+                            fontSize: "0.76rem",
+                            fontWeight: 500,
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "5px",
+                          }}
+                        >
+                          🗓 {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
 
-            {/* Action buttons */}
+            {/* Bottom Actions Row */}
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "14px" }}>
               <button
                 type="button"
@@ -573,13 +718,16 @@ export function ScanCORModal({
                 style={{
                   padding: "8px 24px",
                   borderRadius: "8px",
-                  border: "1.5px solid #374151",
+                  border: "1.5px solid #111827",
                   backgroundColor: "#ffffff",
                   color: "#111827",
                   fontSize: "0.9rem",
                   fontWeight: 500,
                   cursor: "pointer",
+                  transition: "background 0.15s ease",
                 }}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f4f4f5")}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#ffffff")}
               >
                 Cancel
               </button>
@@ -597,8 +745,11 @@ export function ScanCORModal({
                   fontSize: "0.92rem",
                   fontWeight: 600,
                   cursor: "pointer",
-                  boxShadow: "0 2px 4px rgba(0,0,0,0.08)",
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+                  transition: "all 0.15s ease",
                 }}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#facc15")}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#ffe600")}
               >
                 {isSubmitting ? "Importing..." : `Import ${extractedCourses.length} Courses to Schedule`}
               </button>

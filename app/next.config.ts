@@ -16,6 +16,18 @@ const nextConfig: NextConfig = {
         source: "/courses",
         destination: "/src/pages/courses",
       },
+      {
+        source: "/calendar",
+        destination: "/src/pages/calendar",
+      },
+      {
+        source: "/schedule",
+        destination: "/src/pages/schedule",
+      },
+      {
+        source: "/settings",
+        destination: "/src/pages/settings",
+      },
     ];
   },
 };

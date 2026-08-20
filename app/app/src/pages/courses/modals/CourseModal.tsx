@@ -204,34 +204,25 @@ export function CourseModal({
           position: "relative",
         }}
       >
-        {/* Top Header Row with Back Button and Centered Title */}
-        <div
+        {/* Top Header: Back Button at top-left */}
+        <div style={{ display: "flex", justifyContent: "flex-start", marginBottom: "4px" }}>
+          <BackButton onClick={onClose} label="Back" variant="blue" />
+        </div>
+
+        {/* Centered Page Title */}
+        <h2
           style={{
-            display: "flex",
-            alignItems: "center",
-            position: "relative",
-            marginBottom: "14px",
+            textAlign: "center",
+            fontFamily: "'EB Garamond', Georgia, serif",
+            fontSize: "1.75rem",
+            fontStyle: "italic",
+            fontWeight: 400,
+            color: "#111827",
+            margin: "0 0 16px 0",
           }}
         >
-          <div style={{ position: "absolute", left: 0 }}>
-            <BackButton onClick={onClose} label="Back" variant="blue" />
-          </div>
-
-          <h2
-            style={{
-              width: "100%",
-              textAlign: "center",
-              fontFamily: "'EB Garamond', Georgia, serif",
-              fontSize: "1.6rem",
-              fontStyle: "italic",
-              fontWeight: 400,
-              color: "#111827",
-              margin: 0,
-            }}
-          >
-            {mode === "register" ? "Register a course" : "Edit course"}
-          </h2>
-        </div>
+          {mode === "register" ? "Register a course" : "Edit course"}
+        </h2>
 
         {/* Center Folder Graphic Preview */}
         <div
@@ -240,10 +231,11 @@ export function CourseModal({
             flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
-            margin: "8px 0 14px",
+            margin: "4px 0 20px",
           }}
         >
-          <div style={{ width: "110px", height: "78px" }}>
+          {/* Folder Card Preview */}
+          <div style={{ width: "115px", height: "82px", marginBottom: "18px" }}>
             <FolderCard
               color={selectedColor}
               courseName={courseCode || courseName || ""}
@@ -259,8 +251,7 @@ export function CourseModal({
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              gap: "10px",
-              marginTop: "10px",
+              gap: "12px",
             }}
           >
             {FOLDER_THEMES.map((theme) => {
@@ -290,7 +281,7 @@ export function CourseModal({
         </div>
 
         {/* Double Divider Line */}
-        <div style={{ marginBottom: "18px" }}>
+        <div style={{ marginBottom: "20px" }}>
           <div style={{ height: "1px", backgroundColor: "#374151", marginBottom: "2px" }} />
           <div style={{ height: "1px", backgroundColor: "#374151" }} />
         </div>

@@ -16,8 +16,61 @@ class CourseViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         return Course.objects.filter(user=self.request.user)
 
+    def _sync_course_schedule(self, course, data, user):
+        has_schedule = data.get("has_schedule")
+        if has_schedule is False:
+            course.schedule_blocks.all().delete()
+            return
+
+        schedule_days = data.get("schedule_days")
+        if schedule_days is not None:
+            # Clear existing blocks for this course
+            course.schedule_blocks.all().delete()
+            start_t = data.get("schedule_start_time", "").strip() or "08:00"
+            end_t = data.get("schedule_end_time", "").strip() or "10:00"
+            if len(start_t) == 5:
+                start_t = f"{start_t}:00"
+            if len(end_t) == 5:
+                end_t = f"{end_t}:00"
+
+            day_normalization = {
+                "mon": "Mon",
+                "monday": "Mon",
+                "tue": "Tue",
+                "tuesday": "Tue",
+                "wed": "Wed",
+                "wednesday": "Wed",
+                "thu": "Thu",
+                "thurs": "Thu",
+                "thursday": "Thu",
+                "fri": "Fri",
+                "friday": "Fri",
+                "sat": "Sat",
+                "saturday": "Sat",
+                "sun": "Sun",
+                "sunday": "Sun",
+            }
+
+            for d in schedule_days:
+                norm_d = day_normalization.get(d.strip().lower(), "Mon")
+                ScheduleBlock.objects.create(
+                    user=user,
+                    course=course,
+                    title=course.course_name,
+                    day_of_week=norm_d,
+                    start_time=start_t,
+                    end_time=end_t,
+                    color=course.color,
+                    source="manual",
+                )
+
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        course = serializer.save(user=self.request.user)
+        self._sync_course_schedule(course, self.request.data, self.request.user)
+
+    def perform_update(self, serializer):
+        course = serializer.save()
+        self._sync_course_schedule(course, self.request.data, self.request.user)
 
     @action(detail=False, methods=["post"], url_path="scan-cor")
     def scan_cor(self, request):

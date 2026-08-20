@@ -62,12 +62,13 @@ export function CourseModal({
         setInstructor(course.instructor_name || "");
         setRoomLocation(course.room_location || "");
         setSelectedColor((course.color as FolderColorKey) || "purple");
+        const initialDays = (course.schedule_days || []).map((d) => (d === "Thu" ? "Thurs" : d));
         setHasSchedule(
           course.has_schedule !== undefined
             ? course.has_schedule
-            : (course.schedule_days && course.schedule_days.length > 0) || true
+            : initialDays.length > 0
         );
-        setSelectedDays(course.schedule_days || []);
+        setSelectedDays(initialDays);
         setStartTime(course.schedule_start_time || "");
         setEndTime(course.schedule_end_time || "");
       } else {

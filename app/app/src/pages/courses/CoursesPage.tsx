@@ -86,6 +86,10 @@ export default function CoursesPage({ onTabChange }: CoursesPageProps = {}) {
             instructor_name: courseData.instructor_name,
             room_location: courseData.room_location,
             color: courseData.color,
+            has_schedule: courseData.has_schedule,
+            schedule_days: courseData.schedule_days,
+            schedule_start_time: courseData.schedule_start_time,
+            schedule_end_time: courseData.schedule_end_time,
           }),
         });
 
@@ -128,6 +132,10 @@ export default function CoursesPage({ onTabChange }: CoursesPageProps = {}) {
             instructor_name: courseData.instructor_name,
             room_location: courseData.room_location,
             color: courseData.color,
+            has_schedule: courseData.has_schedule,
+            schedule_days: courseData.schedule_days,
+            schedule_start_time: courseData.schedule_start_time,
+            schedule_end_time: courseData.schedule_end_time,
           }),
         });
 

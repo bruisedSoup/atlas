@@ -3,6 +3,7 @@
 import React from "react";
 import { TaskItem } from "../components/TodoList";
 import { PushpinIcon } from "@/app/src/components/PushpinIcon";
+import { BackButton } from "@/app/src/components/BackButton";
 
 interface TaskViewModalProps {
   task: TaskItem | null;
@@ -33,6 +34,9 @@ export function TaskViewModal({
         zIndex: 50,
         padding: "16px",
       }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
     >
       <div
         style={{
@@ -48,23 +52,7 @@ export function TaskViewModal({
       >
         {/* Top Bar: Back Button */}
         <div style={{ display: "flex", alignItems: "center", marginBottom: "16px" }}>
-          <button
-            type="button"
-            onClick={onClose}
-            style={{
-              background: "#bae6fd",
-              color: "#0369a1",
-              border: "1.5px solid #7dd3fc",
-              borderRadius: "16px",
-              padding: "4px 16px",
-              fontSize: "0.85rem",
-              fontFamily: "'Inter', sans-serif",
-              fontWeight: 500,
-              cursor: "pointer",
-            }}
-          >
-            &gt; Back
-          </button>
+          <BackButton onClick={onClose} label="Back" variant="blue" />
         </div>
 
         {/* Top Double Line Border */}

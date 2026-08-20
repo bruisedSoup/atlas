@@ -1,9 +1,10 @@
-﻿"use client";
+"use client";
 
 import React from "react";
 import { TaskItem } from "@/app/src/pages/dashboard/components/TodoList";
 import { PushpinIcon, getRandomPushpinColor } from "@/app/src/components/PushpinIcon";
 import { TodoListSkeleton } from "@/app/src/components/Skeleton";
+import { EmptyState } from "@/app/src/components/EmptyState";
 
 interface VaultTodoListProps {
   tasks: TaskItem[];
@@ -96,33 +97,7 @@ export function VaultTodoList({
       {loading ? (
         <TodoListSkeleton count={4} isVault={true} />
       ) : tasks.length === 0 ? (
-        <div
-          style={{
-            flex: 1,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "54px 0",
-          }}
-        >
-          <img
-            src="/empty.png"
-            alt="Sleepy Cat - No completed tasks"
-            style={{ width: "130px", height: "auto", marginBottom: "18px", objectFit: "contain" }}
-          />
-          <p
-            style={{
-              fontFamily: "'EB Garamond', Georgia, serif",
-              fontSize: "1.35rem",
-              fontWeight: 500,
-              color: "#1f2937",
-              margin: 0,
-            }}
-          >
-            No completed tasks in the vault!
-          </p>
-        </div>
+        <EmptyState title="No completed tasks in the vault!" />
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
           {tasks.map((task, idx) => {

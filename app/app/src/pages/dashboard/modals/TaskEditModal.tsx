@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { TaskItem } from "../components/TodoList";
 import { PushpinIcon, PUSHPIN_VARIANTS, getRandomPushpinColor } from "@/app/src/components/PushpinIcon";
+import { BackButton } from "@/app/src/components/BackButton";
 import { CustomLabelModal, CustomLabelItem } from "./CustomLabelModal";
 import { CourseSelectModal } from "./CourseSelectModal";
 import { DatePickerModal } from "./DatePickerModal";
@@ -192,24 +193,8 @@ export function TaskEditModal({
           }}
         >
           {/* Top Bar: Back Button & Title */}
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
-            <button
-              type="button"
-              onClick={onClose}
-              style={{
-                background: "#bae6fd",
-                color: "#0369a1",
-                border: "1.5px solid #7dd3fc",
-                borderRadius: "16px",
-                padding: "4px 16px",
-                fontSize: "0.85rem",
-                fontFamily: "'Inter', sans-serif",
-                fontWeight: 500,
-                cursor: "pointer",
-              }}
-            >
-              &gt; Back
-            </button>
+          <div style={{ display: "flex", alignItems: "center", marginBottom: "16px" }}>
+            <BackButton onClick={onClose} label="Back" variant="blue" />
 
             <h2
               style={{

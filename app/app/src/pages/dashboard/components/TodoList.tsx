@@ -1,8 +1,9 @@
-﻿"use client";
+"use client";
 
 import React, { useState, useRef, useEffect } from "react";
 import { PushpinIcon, getRandomPushpinColor } from "@/app/src/components/PushpinIcon";
 import { TodoListSkeleton } from "@/app/src/components/Skeleton";
+import { EmptyState } from "@/app/src/components/EmptyState";
 
 export interface TaskItem {
   id: string;
@@ -339,36 +340,15 @@ export function TodoList({
       {loading ? (
         <TodoListSkeleton count={4} />
       ) : tasks.length === 0 ? (
-        <div
-          style={{
-            flex: 1,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "48px 0",
-          }}
-        >
-          <img
-            src="/empty.png"
-            alt="Sleepy Cat - No tasks"
-            style={{ width: "120px", height: "auto", marginBottom: "16px", objectFit: "contain" }}
-          />
-          <p
-            style={{
-              fontFamily: "'EB Garamond', Georgia, serif",
-              fontSize: "1.2rem",
-              fontWeight: 500,
-              color: "#1f2937",
-            }}
-          >
-            {statusFilter === "ongoing"
+        <EmptyState
+          title={
+            statusFilter === "ongoing"
               ? "No tasks in your work hub!"
               : statusFilter === "missed"
               ? "No missed deliverables. You're all caught up!"
-              : "No completed tasks yet."}
-          </p>
-        </div>
+              : "No completed tasks yet."
+          }
+        />
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
           {tasks.map((task, idx) => {

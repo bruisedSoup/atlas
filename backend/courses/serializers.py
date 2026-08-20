@@ -11,8 +11,8 @@ class CourseScheduleBlockSerializer(serializers.ModelSerializer):
             "day_of_week",
             "start_time",
             "end_time",
-            "room_location",
-            "instructor_name",
+            "title",
+            "color",
         ]
 
 
@@ -46,7 +46,6 @@ class CourseSerializer(serializers.ModelSerializer):
         return obj.schedule_blocks.exists()
 
     def get_schedule_days(self, obj):
-        # Normalize Thu / Thurs so frontend highlights Thurs correctly
         days = []
         for block in obj.schedule_blocks.all():
             d = block.day_of_week

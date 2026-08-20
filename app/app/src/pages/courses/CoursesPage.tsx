@@ -5,6 +5,7 @@ import { Sidebar } from "@/app/src/components/Sidebar";
 import { CoursesHeaderCards } from "./components/CoursesHeaderCards";
 import { CourseFolderGrid, CourseData } from "./components/CourseFolderGrid";
 import { CourseModal } from "./modals/CourseModal";
+import { ScanCORModal } from "./modals/ScanCORModal";
 import { useUser } from "@/app/context/UserContext";
 
 interface CoursesPageProps {
@@ -20,6 +21,7 @@ export default function CoursesPage({ onTabChange }: CoursesPageProps = {}) {
   // Modals state
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
   const [selectedCourseForEdit, setSelectedCourseForEdit] = useState<CourseData | null>(null);
+  const [isScanModalOpen, setIsScanModalOpen] = useState(false);
 
   const { accessToken, getFreshToken } = useUser();
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -211,9 +213,17 @@ export default function CoursesPage({ onTabChange }: CoursesPageProps = {}) {
           courses={displayedCourses}
           onCourseClick={(course) => setSelectedCourseForEdit(course)}
           onAddNewCourse={() => setIsRegisterModalOpen(true)}
+          onScanOCR={() => setIsScanModalOpen(true)}
           loading={loading}
         />
       </main>
+
+      {/* OCR Document Scanner Modal */}
+      <ScanCORModal
+        isOpen={isScanModalOpen}
+        onClose={() => setIsScanModalOpen(false)}
+        onImportComplete={fetchCourses}
+      />
 
       {/* Register Course Modal */}
       <CourseModal

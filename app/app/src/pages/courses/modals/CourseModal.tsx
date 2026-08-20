@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { BackButton } from "@/app/src/components/BackButton";
 import { FolderCard, FOLDER_THEMES, FolderColorKey } from "@/app/src/components/FolderCard";
 import { CourseData } from "../components/CourseFolderGrid";
+import { TimePickerModal } from "@/app/src/modals/TimePickerModal";
 
 interface CourseModalProps {
   isOpen: boolean;
@@ -15,6 +16,21 @@ interface CourseModalProps {
 }
 
 const DAYS_LIST = ["Mon", "Tue", "Wed", "Thurs", "Fri", "Sat", "Sun"];
+
+const formatTimeDisplay = (timeStr: string, placeholder: string) => {
+  if (!timeStr) return placeholder;
+  try {
+    const [hStr, mStr] = timeStr.split(":");
+    let h = parseInt(hStr, 10);
+    const m = mStr || "00";
+    const p = h >= 12 ? "PM" : "AM";
+    if (h === 0) h = 12;
+    else if (h > 12) h -= 12;
+    return `${h}:${m} ${p}`;
+  } catch {
+    return timeStr || placeholder;
+  }
+};
 
 export function CourseModal({
   isOpen,
@@ -33,6 +49,7 @@ export function CourseModal({
   const [selectedDays, setSelectedDays] = useState<string[]>([]);
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
+  const [timePickerTarget, setTimePickerTarget] = useState<"start" | "end" | null>(null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
@@ -505,36 +522,55 @@ export function CourseModal({
                 transition: "opacity 0.15s ease",
               }}
             >
-              <input
-                type="text"
+              <button
+                type="button"
+                onClick={() => setTimePickerTarget("start")}
                 className="course-input-field"
-                placeholder="Start time"
-                value={startTime}
-                onChange={(e) => setStartTime(e.target.value)}
                 style={{
-                  height: "36px",
+                  height: "38px",
                   padding: "0 12px",
                   textAlign: "center",
                   backgroundColor: "#ffffff",
-                  color: "#111827",
-                  colorScheme: "light",
+                  color: startTime ? "#111827" : "#9ca3af",
+                  border: "1.5px solid #111827",
+                  borderRadius: "8px",
+                  fontSize: "0.88rem",
+                  fontFamily: "'Inter', sans-serif",
+                  fontWeight: startTime ? 500 : 400,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  transition: "all 0.15s ease",
                 }}
-              />
-              <input
-                type="text"
+              >
+                {formatTimeDisplay(startTime, "Start time")}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setTimePickerTarget("end")}
                 className="course-input-field"
-                placeholder="End time"
-                value={endTime}
-                onChange={(e) => setEndTime(e.target.value)}
                 style={{
-                  height: "36px",
+                  height: "38px",
                   padding: "0 12px",
                   textAlign: "center",
                   backgroundColor: "#ffffff",
-                  color: "#111827",
-                  colorScheme: "light",
+                  color: endTime ? "#111827" : "#9ca3af",
+                  border: "1.5px solid #111827",
+                  borderRadius: "8px",
+                  fontSize: "0.88rem",
+                  fontFamily: "'Inter', sans-serif",
+                  fontWeight: endTime ? 500 : 400,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  transition: "all 0.15s ease",
                 }}
-              />
+              >
+                {formatTimeDisplay(endTime, "End time")}
+              </button>
             </div>
 
             {/* Notification Helper Text */}
@@ -604,6 +640,25 @@ export function CourseModal({
             </button>
           </div>
         </form>
+
+        {/* Alarm Clock Drum Wheel Time Picker Modal */}
+        <TimePickerModal
+          isOpen={timePickerTarget !== null}
+          onClose={() => setTimePickerTarget(null)}
+          selectedTime={
+            timePickerTarget === "start"
+              ? (startTime || "07:00")
+              : (endTime || "09:00")
+          }
+          onSelectTime={(timeStr) => {
+            if (timePickerTarget === "start") {
+              setStartTime(timeStr);
+            } else if (timePickerTarget === "end") {
+              setEndTime(timeStr);
+            }
+            setTimePickerTarget(null);
+          }}
+        />
       </div>
     </div>
   );

@@ -261,7 +261,7 @@ export function TimePickerModal({
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        zIndex: 80,
+        zIndex: 150,
         padding: "16px",
       }}
     >

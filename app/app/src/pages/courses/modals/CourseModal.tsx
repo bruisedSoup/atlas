@@ -139,9 +139,6 @@ export function CourseModal({
         padding: "16px",
         colorScheme: "light",
       }}
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
     >
       <style>{`
         .course-modal-box {

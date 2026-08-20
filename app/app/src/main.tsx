@@ -48,8 +48,22 @@ interface MainProps {
 export default function Main({ initialTab = "work-hub" }: MainProps) {
   const [currentTab, setCurrentTab] = useState<AtlasTab>(initialTab);
 
+  const tabToRouteMap: Record<AtlasTab, string> = {
+    "work-hub": "/dashboard",
+    "the-vault": "/thevault",
+    courses: "/courses",
+    calendar: "/calendar",
+    schedule: "/schedule",
+    settings: "/settings",
+  };
+
   const handleTabChange = (tabId: string) => {
-    setCurrentTab(tabId as AtlasTab);
+    const validTab = tabId as AtlasTab;
+    setCurrentTab(validTab);
+    const targetRoute = tabToRouteMap[validTab];
+    if (targetRoute && typeof window !== "undefined" && window.location.pathname !== targetRoute) {
+      window.history.pushState({}, "", targetRoute);
+    }
   };
 
   switch (currentTab) {

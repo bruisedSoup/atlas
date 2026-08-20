@@ -126,9 +126,9 @@ export function FolderCard({
         <div
           style={{
             position: "absolute",
-            right: "12%",
-            bottom: "9%",
-            left: "20%",
+            right: "10%",
+            bottom: "8%",
+            left: "14%",
             textAlign: "right",
             overflow: "hidden",
             textOverflow: "ellipsis",

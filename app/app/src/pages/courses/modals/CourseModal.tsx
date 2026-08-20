@@ -238,8 +238,8 @@ export function CourseModal({
           <div style={{ width: "120px", height: "86px", marginBottom: "22px" }}>
             <FolderCard
               color={selectedColor}
-              courseName={courseCode || courseName || ""}
-              courseCode={courseCode || courseName || ""}
+              courseName={courseName}
+              courseCode={courseName}
               interactive={false}
               size="sm"
             />
@@ -325,8 +325,9 @@ export function CourseModal({
               placeholder="Course code"
               value={courseName}
               onChange={(e) => {
-                setCourseName(e.target.value);
-                if (!courseCode) setCourseCode(e.target.value);
+                const val = e.target.value;
+                setCourseName(val);
+                setCourseCode(val);
               }}
               style={{
                 width: "100%",

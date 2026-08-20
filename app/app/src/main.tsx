@@ -1,20 +1,20 @@
 "use client";
 
 import React, { useState } from "react";
-import DashboardPage from "@/app/src/pages/dashboard/page";
-import TheVaultPage from "@/app/src/pages/thevault/page";
-import CoursesPage from "@/app/src/pages/courses/page";
-import CalendarPage from "@/app/src/pages/calendar/page";
-import SchedulePage from "@/app/src/pages/schedule/page";
-import SettingsPage from "@/app/src/pages/settings/page";
+import DashboardPage from "@/app/src/pages/dashboard/DashboardPage";
+import TheVaultPage from "@/app/src/pages/thevault/TheVaultPage";
+import CoursesPage from "@/app/src/pages/courses/CoursesPage";
+import CalendarPage from "@/app/src/pages/calendar/CalendarPage";
+import SchedulePage from "@/app/src/pages/schedule/SchedulePage";
+import SettingsPage from "@/app/src/pages/settings/SettingsPage";
 
 // Re-export all subpages
-export { default as DashboardPage } from "@/app/src/pages/dashboard/page";
-export { default as TheVaultPage } from "@/app/src/pages/thevault/page";
-export { default as CoursesPage } from "@/app/src/pages/courses/page";
-export { default as CalendarPage } from "@/app/src/pages/calendar/page";
-export { default as SchedulePage } from "@/app/src/pages/schedule/page";
-export { default as SettingsPage } from "@/app/src/pages/settings/page";
+export { default as DashboardPage } from "@/app/src/pages/dashboard/DashboardPage";
+export { default as TheVaultPage } from "@/app/src/pages/thevault/TheVaultPage";
+export { default as CoursesPage } from "@/app/src/pages/courses/CoursesPage";
+export { default as CalendarPage } from "@/app/src/pages/calendar/CalendarPage";
+export { default as SchedulePage } from "@/app/src/pages/schedule/SchedulePage";
+export { default as SettingsPage } from "@/app/src/pages/settings/SettingsPage";
 
 // Re-export global components
 export { Sidebar } from "@/app/src/components/Sidebar";

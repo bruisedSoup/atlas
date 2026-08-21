@@ -98,7 +98,8 @@ export function Sidebar({
     <aside
       style={{
         width: collapsed ? "72px" : "220px",
-        minHeight: "100vh",
+        height: "100vh",
+        flexShrink: 0,
         background: "#ffffff",
         borderRight: "1px solid #e5e7eb",
         padding: "20px 14px",
@@ -106,9 +107,11 @@ export function Sidebar({
         flexDirection: "column",
         justifyContent: "space-between",
         transition: "width 0.2s ease",
-        position: "relative",
         backgroundImage: "radial-gradient(#e5e7eb 1px, transparent 1px)",
         backgroundSize: "20px 20px",
+        zIndex: 40,
+        overflow: "hidden",
+        boxSizing: "border-box",
       }}
     >
       <div>

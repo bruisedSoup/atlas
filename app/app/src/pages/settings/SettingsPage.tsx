@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { Sidebar } from "@/app/src/components/Sidebar";
 import { UserProfileCard } from "@/app/src/components/UserProfileCard";
 import { useUser } from "@/app/context/UserContext";
@@ -14,18 +14,63 @@ export default function SettingsPage({ onTabChange }: SettingsPageProps = {}) {
   const [activeCategory, setActiveCategory] = useState<"General" | "Notifications" | "Integrations" | "Account">("General");
   const { openProfileModal, userProfile } = useUser();
 
-  const categories: ("General" | "Notifications" | "Integrations" | "Account")[] = [
+  type SettingsCategory = "General" | "Notifications" | "Integrations" | "Account";
+  const categories: SettingsCategory[] = [
     "General",
     "Notifications",
     "Integrations",
     "Account",
   ];
 
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const startX = useRef(0);
+  const scrollLeftStart = useRef(0);
+  const dragDistance = useRef(0);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!scrollRef.current) return;
+    setIsDragging(true);
+    startX.current = e.pageX - scrollRef.current.offsetLeft;
+    scrollLeftStart.current = scrollRef.current.scrollLeft;
+    dragDistance.current = 0;
+  };
+
+  const handleMouseLeave = () => {
+    setIsDragging(false);
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || !scrollRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - scrollRef.current.offsetLeft;
+    const walk = x - startX.current;
+    dragDistance.current += Math.abs(walk);
+    scrollRef.current.scrollLeft = scrollLeftStart.current - walk;
+  };
+
+  const handleWheel = (e: React.WheelEvent) => {
+    if (!scrollRef.current) return;
+    if (e.deltaY !== 0 && e.deltaX === 0) {
+      scrollRef.current.scrollLeft += e.deltaY;
+    }
+  };
+
+  const handleCategoryClick = (cat: SettingsCategory) => {
+    if (dragDistance.current > 5) return;
+    setActiveCategory(cat);
+  };
+
   return (
     <div
       style={{
         display: "flex",
-        minHeight: "100vh",
+        height: "100vh",
+        overflow: "hidden",
         background: "#f4f5f7",
         fontFamily: "'Inter', sans-serif",
       }}
@@ -33,6 +78,7 @@ export default function SettingsPage({ onTabChange }: SettingsPageProps = {}) {
       {/* Sidebar with activeTab="settings" */}
       <Sidebar
         activeTab="settings"
+        onTabChange={onTabChange}
         collapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
       />
@@ -41,22 +87,23 @@ export default function SettingsPage({ onTabChange }: SettingsPageProps = {}) {
       <main
         style={{
           flex: 1,
+          height: "100vh",
+          overflowY: "auto",
           padding: "24px 32px",
-          maxWidth: "1280px",
-          margin: "0 auto",
           width: "100%",
         }}
       >
-        {/* Top Header Section (Left Card + Right UserProfileCard) */}
+        <div style={{ maxWidth: "1280px", margin: "0 auto", paddingBottom: "32px" }}>
+        {/* Top Header Section */}
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "1fr 1fr",
+            gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
             gap: "24px",
             marginBottom: "24px",
           }}
         >
-          {/* Left Card: Settings Header & Category Filter Pills */}
+          {/* Left Card: Settings Overview & Category Filter Pills */}
           <div
             style={{
               background: "#ffffff",
@@ -68,10 +115,12 @@ export default function SettingsPage({ onTabChange }: SettingsPageProps = {}) {
               flexDirection: "column",
               justifyContent: "space-between",
               minHeight: "155px",
+              minWidth: 0,
+              overflow: "hidden",
             }}
           >
             <div>
-              {/* Header row with Settings Icon and Title */}
+              {/* Header row with Settings icon and Title */}
               <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "4px" }}>
                 <svg
                   width="24"
@@ -121,14 +170,31 @@ export default function SettingsPage({ onTabChange }: SettingsPageProps = {}) {
             </div>
 
             {/* Category Filter Chips */}
-            <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+            <div
+              ref={scrollRef}
+              onMouseDown={handleMouseDown}
+              onMouseLeave={handleMouseLeave}
+              onMouseUp={handleMouseUp}
+              onMouseMove={handleMouseMove}
+              onWheel={handleWheel}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                overflowX: "auto",
+                paddingBottom: "2px",
+                scrollbarWidth: "none",
+                cursor: isDragging ? "grabbing" : "grab",
+                userSelect: "none",
+              }}
+            >
               {categories.map((cat) => {
                 const isActive = activeCategory === cat;
                 return (
                   <button
                     key={cat}
                     type="button"
-                    onClick={() => setActiveCategory(cat)}
+                    onClick={() => handleCategoryClick(cat)}
                     style={{
                       height: "32px",
                       padding: "0 16px",
@@ -139,9 +205,11 @@ export default function SettingsPage({ onTabChange }: SettingsPageProps = {}) {
                       fontSize: "0.85rem",
                       fontFamily: "'Inter', sans-serif",
                       fontWeight: 500,
-                      cursor: "pointer",
+                      cursor: isDragging ? "grabbing" : "pointer",
                       boxShadow: isActive ? "0 2px 4px rgba(0,0,0,0.1)" : "none",
                       transition: "all 0.15s ease",
+                      flexShrink: 0,
+                      whiteSpace: "nowrap",
                     }}
                   >
                     {cat}
@@ -284,6 +352,7 @@ export default function SettingsPage({ onTabChange }: SettingsPageProps = {}) {
               </span>
             </div>
           </div>
+        </div>
         </div>
       </main>
     </div>

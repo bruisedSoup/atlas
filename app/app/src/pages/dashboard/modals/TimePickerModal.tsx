@@ -18,6 +18,7 @@ interface WheelColumnProps<T> {
   onSelect: (item: T) => void;
   renderItem?: (item: T) => React.ReactNode;
   width?: string;
+  loop?: boolean;
 }
 
 function WheelColumn<T extends string | number>({
@@ -26,6 +27,7 @@ function WheelColumn<T extends string | number>({
   onSelect,
   renderItem,
   width = "72px",
+  loop = true,
 }: WheelColumnProps<T>) {
   const containerRef = useRef<HTMLDivElement>(null);
   const isDragging = useRef(false);
@@ -35,46 +37,123 @@ function WheelColumn<T extends string | number>({
   const isUserScrolling = useRef(false);
   const scrollTimeout = useRef<NodeJS.Timeout | null>(null);
 
+  const N = items.length;
+  // Repetition multiplier for infinite loop
+  const K = loop ? (N <= 2 ? 15 : N <= 12 ? 9 : 7) : 1;
+  const middleSet = Math.floor(K / 2);
+  const cycleHeight = N * ITEM_HEIGHT;
+
+  const repeatedItems = React.useMemo(() => {
+    if (!loop) return items;
+    const arr: T[] = [];
+    for (let i = 0; i < K; i++) {
+      for (let j = 0; j < N; j++) {
+        arr.push(items[j]);
+      }
+    }
+    return arr;
+  }, [items, loop, K, N]);
+
   const selectedIndex = items.indexOf(selectedItem);
+  const [activeRawIndex, setActiveRawIndex] = useState<number>(() => {
+    const idx = selectedIndex >= 0 ? selectedIndex : 0;
+    return loop ? middleSet * N + idx : idx;
+  });
 
   // Scroll to selected position
-  const scrollToSelected = useCallback(
-    (index: number, smooth = true) => {
-      if (containerRef.current && index >= 0) {
-        const top = index * ITEM_HEIGHT;
+  const scrollToRawIndex = useCallback(
+    (targetRawIndex: number, smooth = true) => {
+      if (containerRef.current && targetRawIndex >= 0) {
+        const top = targetRawIndex * ITEM_HEIGHT;
         containerRef.current.scrollTo({
           top,
           behavior: smooth ? "smooth" : "auto",
         });
+        setActiveRawIndex(targetRawIndex);
       }
     },
     []
   );
 
+  // Initial scroll position on mount
   useEffect(() => {
-    if (!isUserScrolling.current && !isDragging.current) {
-      scrollToSelected(selectedIndex, false);
+    if (containerRef.current && selectedIndex >= 0) {
+      const targetIndex = loop ? middleSet * N + selectedIndex : selectedIndex;
+      containerRef.current.scrollTop = targetIndex * ITEM_HEIGHT;
+      setActiveRawIndex(targetIndex);
     }
-  }, [selectedIndex, scrollToSelected]);
+  }, []);
+
+  // When selectedItem changes externally
+  useEffect(() => {
+    if (!isUserScrolling.current && !isDragging.current && selectedIndex >= 0) {
+      if (loop) {
+        const currentNorm = ((activeRawIndex % N) + N) % N;
+        if (currentNorm !== selectedIndex) {
+          const targetIndex = middleSet * N + selectedIndex;
+          scrollToRawIndex(targetIndex, false);
+        }
+      } else {
+        scrollToRawIndex(selectedIndex, false);
+      }
+    }
+  }, [selectedIndex, loop, middleSet, N, scrollToRawIndex, activeRawIndex]);
 
   // Snap to nearest item after scroll finishes
-  const snapToNearest = () => {
+  const snapToNearest = useCallback(() => {
     if (!containerRef.current) return;
     const scrollTop = containerRef.current.scrollTop;
-    const index = Math.round(scrollTop / ITEM_HEIGHT);
-    const clampedIndex = Math.max(0, Math.min(index, items.length - 1));
+    const rawIndex = Math.round(scrollTop / ITEM_HEIGHT);
+    const normalizedIndex = ((rawIndex % N) + N) % N;
 
-    containerRef.current.scrollTo({
-      top: clampedIndex * ITEM_HEIGHT,
-      behavior: "smooth",
-    });
-
-    if (items[clampedIndex] !== selectedItem) {
-      onSelect(items[clampedIndex]);
+    if (loop) {
+      const targetTop = rawIndex * ITEM_HEIGHT;
+      containerRef.current.scrollTo({
+        top: targetTop,
+        behavior: "smooth",
+      });
+      setActiveRawIndex(rawIndex);
+    } else {
+      const clampedIndex = Math.max(0, Math.min(rawIndex, N - 1));
+      containerRef.current.scrollTo({
+        top: clampedIndex * ITEM_HEIGHT,
+        behavior: "smooth",
+      });
+      setActiveRawIndex(clampedIndex);
     }
-  };
+
+    const newItem = items[normalizedIndex];
+    if (newItem !== selectedItem) {
+      onSelect(newItem);
+    }
+  }, [N, items, loop, onSelect, selectedItem]);
 
   const handleScroll = () => {
+    if (!containerRef.current) return;
+    const scrollTop = containerRef.current.scrollTop;
+    const raw = Math.round(scrollTop / ITEM_HEIGHT);
+    setActiveRawIndex(raw);
+
+    // Infinite loop wrap-around
+    if (loop) {
+      const minThreshold = 1.5 * cycleHeight;
+      const maxThreshold = (K - 2.5) * cycleHeight;
+      const shiftCycles = Math.floor(K / 2);
+      const shiftPx = shiftCycles * cycleHeight;
+
+      if (scrollTop < minThreshold) {
+        containerRef.current.scrollTop += shiftPx;
+        if (isDragging.current) {
+          startScrollTop.current += shiftPx;
+        }
+      } else if (scrollTop > maxThreshold) {
+        containerRef.current.scrollTop -= shiftPx;
+        if (isDragging.current) {
+          startScrollTop.current -= shiftPx;
+        }
+      }
+    }
+
     isUserScrolling.current = true;
     if (scrollTimeout.current) clearTimeout(scrollTimeout.current);
 
@@ -155,19 +234,20 @@ function WheelColumn<T extends string | number>({
       {/* Top Padding so first item can reach center */}
       <div style={{ height: `${ITEM_HEIGHT * 2}px`, pointerEvents: "none" }} />
 
-      {items.map((item, idx) => {
-        const isSelected = item === selectedItem;
-        const diff = Math.abs(idx - selectedIndex);
-        const opacity = isSelected ? 1 : diff === 1 ? 0.5 : 0.25;
-        const scale = isSelected ? 1.05 : 0.9;
+      {repeatedItems.map((item, idx) => {
+        const diff = Math.abs(idx - activeRawIndex);
+        const isCentered = diff === 0;
+        const opacity = isCentered ? 1 : diff === 1 ? 0.5 : 0.25;
+        const scale = isCentered ? 1.05 : 0.9;
 
         return (
           <div
-            key={String(item)}
+            key={`${String(item)}-${idx}`}
             onClick={() => {
               if (!hasMoved.current) {
-                onSelect(item);
-                scrollToSelected(idx, true);
+                const normalizedIndex = ((idx % N) + N) % N;
+                onSelect(items[normalizedIndex]);
+                scrollToRawIndex(idx, true);
               }
             }}
             style={{
@@ -177,9 +257,9 @@ function WheelColumn<T extends string | number>({
               alignItems: "center",
               justifyContent: "center",
               fontFamily: "'EB Garamond', Georgia, serif",
-              fontSize: isSelected ? "1.65rem" : "1.25rem",
-              fontWeight: isSelected ? 600 : 400,
-              color: isSelected ? "#111827" : "#6b7280",
+              fontSize: isCentered ? "1.65rem" : "1.25rem",
+              fontWeight: isCentered ? 600 : 400,
+              color: isCentered ? "#111827" : "#6b7280",
               opacity,
               transform: `scale(${scale})`,
               transition: "opacity 0.15s ease, transform 0.15s ease, color 0.15s ease",
@@ -366,6 +446,7 @@ export function TimePickerModal({
               selectedItem={selectedPeriod}
               onSelect={setSelectedPeriod}
               width="68px"
+              loop={false}
             />
           </div>
 

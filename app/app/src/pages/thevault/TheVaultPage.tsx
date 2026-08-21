@@ -166,7 +166,8 @@ export default function TheVaultPage({ onTabChange }: TheVaultPageProps = {}) {
     <div
       style={{
         display: "flex",
-        minHeight: "100vh",
+        height: "100vh",
+        overflow: "hidden",
         background: "#f4f5f7",
         fontFamily: "'Inter', sans-serif",
       }}
@@ -183,12 +184,13 @@ export default function TheVaultPage({ onTabChange }: TheVaultPageProps = {}) {
       <main
         style={{
           flex: 1,
+          height: "100vh",
+          overflowY: "auto",
           padding: "24px 32px",
-          maxWidth: "1280px",
-          margin: "0 auto",
           width: "100%",
         }}
       >
+        <div style={{ maxWidth: "1280px", margin: "0 auto", paddingBottom: "32px" }}>
         {/* The Vault Header Cards (with global UserProfileCard) */}
         <VaultHeaderCards
           completedCount={completedTasks.length}
@@ -204,6 +206,7 @@ export default function TheVaultPage({ onTabChange }: TheVaultPageProps = {}) {
           onRefresh={fetchCompletedTasks}
           loading={loading}
         />
+        </div>
       </main>
 
       {/* Vault Task View Modal */}

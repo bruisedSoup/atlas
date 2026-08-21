@@ -393,7 +393,8 @@ export default function DashboardPage({ onTabChange }: DashboardPageProps = {}) 
     <div
       style={{
         display: "flex",
-        minHeight: "100vh",
+        height: "100vh",
+        overflow: "hidden",
         background: "#f4f5f7",
         fontFamily: "'Inter', sans-serif",
       }}
@@ -410,12 +411,13 @@ export default function DashboardPage({ onTabChange }: DashboardPageProps = {}) 
       <main
         style={{
           flex: 1,
+          height: "100vh",
+          overflowY: "auto",
           padding: "24px 32px",
-          maxWidth: "1280px",
-          margin: "0 auto",
           width: "100%",
         }}
       >
+        <div style={{ maxWidth: "1280px", margin: "0 auto", paddingBottom: "32px" }}>
         {/* Offline / Syncing Floating Status Pill */}
         {(!isOnline || pendingSyncCount > 0 || isSyncing) && (
           <div
@@ -495,6 +497,7 @@ export default function DashboardPage({ onTabChange }: DashboardPageProps = {}) 
           missedCount={missedCount}
           isOnline={isOnline}
         />
+        </div>
       </main>
 
       {/* View Task Modal */}

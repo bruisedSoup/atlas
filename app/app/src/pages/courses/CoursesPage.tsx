@@ -182,7 +182,8 @@ export default function CoursesPage({ onTabChange }: CoursesPageProps = {}) {
     <div
       style={{
         display: "flex",
-        minHeight: "100vh",
+        height: "100vh",
+        overflow: "hidden",
         background: "#f4f5f7",
         fontFamily: "'Inter', sans-serif",
       }}
@@ -202,12 +203,13 @@ export default function CoursesPage({ onTabChange }: CoursesPageProps = {}) {
       <main
         style={{
           flex: 1,
+          height: "100vh",
+          overflowY: "auto",
           padding: "24px 32px",
-          maxWidth: "1280px",
-          margin: "0 auto",
           width: "100%",
         }}
       >
+        <div style={{ maxWidth: "1280px", margin: "0 auto", paddingBottom: "32px" }}>
         {/* Top Header Cards */}
         <CoursesHeaderCards
           coursesCount={courses.length}
@@ -224,6 +226,7 @@ export default function CoursesPage({ onTabChange }: CoursesPageProps = {}) {
           onScanOCR={() => setIsScanModalOpen(true)}
           loading={loading}
         />
+        </div>
       </main>
 
       {/* OCR Document Scanner Modal */}

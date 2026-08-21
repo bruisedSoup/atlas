@@ -28,7 +28,7 @@ export function VaultHeaderCards({
     <div
       style={{
         display: "grid",
-        gridTemplateColumns: "1fr 1fr",
+        gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
         gap: "24px",
         marginBottom: "24px",
       }}
@@ -45,6 +45,8 @@ export function VaultHeaderCards({
           justifyContent: "space-between",
           boxShadow: "0 2px 8px -2px rgba(0,0,0,0.03)",
           minHeight: "155px",
+          minWidth: 0,
+          overflow: "hidden",
         }}
       >
         <div>

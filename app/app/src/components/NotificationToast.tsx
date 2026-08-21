@@ -1,7 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { realtimeService } from "@/app/src/services/realtime";
+import { showDesktopNotification } from "@/app/src/services/desktopNotification";
+import { getCachedTasks } from "@/app/src/services/offlineStorage";
 
 export interface ToastNotification {
   id: string;
@@ -13,20 +15,32 @@ export interface ToastNotification {
 
 export function NotificationToast() {
   const [toasts, setToasts] = useState<ToastNotification[]>([]);
+  const notifiedTasksRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
-    // Listen for WebSocket notifications
+    // 1. Listen for WebSocket / Realtime notifications from backend
     const unsubscribe = realtimeService.on("NOTIFICATION", (msg) => {
       const data = msg.payload;
+      const title = data.title || "Atlas Notification";
+      const message = data.message || "";
+      const isReminder = data.notification_type === "deadline_reminder";
+
       const newToast: ToastNotification = {
         id: `toast-${Date.now()}-${Math.random()}`,
-        title: data.title || "Atlas Notification",
-        message: data.message || "",
-        type: data.notification_type === "deadline_reminder" ? "reminder" : "info",
+        title,
+        message,
+        type: isReminder ? "reminder" : "info",
         timestamp: Date.now(),
       };
 
       setToasts((prev) => [newToast, ...prev.slice(0, 4)]);
+
+      // Pop up directly on the user's screen (Native OS Desktop Notification)
+      showDesktopNotification({
+        title,
+        body: message,
+        sound: true,
+      });
 
       // Auto dismiss after 7 seconds
       setTimeout(() => {
@@ -34,8 +48,75 @@ export function NotificationToast() {
       }, 7000);
     });
 
+    // 2. Client-side local deadline alarm watcher (checks every 30s)
+    const checkDeadlines = async () => {
+      try {
+        const cached = await getCachedTasks();
+        if (!cached || cached.length === 0) return;
+
+        const now = new Date();
+
+        for (const task of cached) {
+          if (task.status === "done" || task.status === "archived") continue;
+          if (!task.deadline_date) continue;
+
+          // Parse deadline date & time
+          const [year, month, day] = task.deadline_date.split("-").map(Number);
+          let hours = 23;
+          let minutes = 59;
+          if (task.deadline_time) {
+            const [hStr, mStr] = task.deadline_time.split(":");
+            hours = parseInt(hStr, 10);
+            minutes = parseInt(mStr || "00", 10);
+          }
+
+          const deadline = new Date(year, month - 1, day, hours, minutes, 0);
+          const diffMs = deadline.getTime() - now.getTime();
+          const diffMinutes = diffMs / (1000 * 60);
+
+          // If due within 15 minutes (between 0 and 15 mins) and not yet notified
+          if (diffMinutes >= 0 && diffMinutes <= 15) {
+            const notifKey = `${task.id}-${task.deadline_date}-${task.deadline_time || ""}`;
+            if (!notifiedTasksRef.current.has(notifKey)) {
+              notifiedTasksRef.current.add(notifKey);
+
+              const timeStr = task.deadline_time || "soon";
+              const title = "⏰ [Atlas] Task Due in 15 Minutes!";
+              const message = `"${task.title}" is due at ${timeStr}.`;
+
+              const newToast: ToastNotification = {
+                id: `toast-${Date.now()}-${Math.random()}`,
+                title,
+                message,
+                type: "reminder",
+                timestamp: Date.now(),
+              };
+              setToasts((prev) => [newToast, ...prev.slice(0, 4)]);
+
+              // Trigger native OS screen popup on Desktop
+              showDesktopNotification({
+                title,
+                body: message,
+                sound: true,
+              });
+
+              setTimeout(() => {
+                setToasts((prev) => prev.filter((t) => t.id !== newToast.id));
+              }, 7000);
+            }
+          }
+        }
+      } catch (err) {
+        // Silently catch cache check errors
+      }
+    };
+
+    checkDeadlines();
+    const interval = setInterval(checkDeadlines, 30000);
+
     return () => {
       unsubscribe();
+      clearInterval(interval);
     };
   }, []);
 

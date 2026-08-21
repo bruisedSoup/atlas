@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useRef, useState } from "react";
 import { UserProfileCard } from "@/app/src/components/UserProfileCard";
 
 export type VaultTimeFilter = "All" | "This Week" | "This Month" | "This Semester";
@@ -23,6 +23,48 @@ export function VaultHeaderCards({
   onOpenProfile,
 }: VaultHeaderCardsProps) {
   const timeFilters: VaultTimeFilter[] = ["All", "This Week", "This Month", "This Semester"];
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const startX = useRef(0);
+  const scrollLeftStart = useRef(0);
+  const dragDistance = useRef(0);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!scrollRef.current) return;
+    setIsDragging(true);
+    startX.current = e.pageX - scrollRef.current.offsetLeft;
+    scrollLeftStart.current = scrollRef.current.scrollLeft;
+    dragDistance.current = 0;
+  };
+
+  const handleMouseLeave = () => {
+    setIsDragging(false);
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || !scrollRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - scrollRef.current.offsetLeft;
+    const walk = x - startX.current;
+    dragDistance.current += Math.abs(walk);
+    scrollRef.current.scrollLeft = scrollLeftStart.current - walk;
+  };
+
+  const handleWheel = (e: React.WheelEvent) => {
+    if (!scrollRef.current) return;
+    if (e.deltaY !== 0 && e.deltaX === 0) {
+      scrollRef.current.scrollLeft += e.deltaY;
+    }
+  };
+
+  const handleFilterClick = (filter: VaultTimeFilter) => {
+    if (dragDistance.current > 5) return;
+    onTimeFilterChange(filter);
+  };
 
   return (
     <div
@@ -97,14 +139,31 @@ export function VaultHeaderCards({
         </div>
 
         {/* Time Filter Chips */}
-        <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+        <div
+          ref={scrollRef}
+          onMouseDown={handleMouseDown}
+          onMouseLeave={handleMouseLeave}
+          onMouseUp={handleMouseUp}
+          onMouseMove={handleMouseMove}
+          onWheel={handleWheel}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
+            overflowX: "auto",
+            paddingBottom: "2px",
+            scrollbarWidth: "none",
+            cursor: isDragging ? "grabbing" : "grab",
+            userSelect: "none",
+          }}
+        >
           {timeFilters.map((filter) => {
             const isActive = activeTimeFilter === filter;
             return (
               <button
                 key={filter}
                 type="button"
-                onClick={() => onTimeFilterChange(filter)}
+                onClick={() => handleFilterClick(filter)}
                 style={{
                   height: "32px",
                   padding: "0 14px",
@@ -115,9 +174,11 @@ export function VaultHeaderCards({
                   fontSize: "0.85rem",
                   fontFamily: "'Inter', sans-serif",
                   fontWeight: 500,
-                  cursor: "pointer",
+                  cursor: isDragging ? "grabbing" : "pointer",
                   boxShadow: isActive ? "0 2px 4px rgba(0,0,0,0.1)" : "none",
                   transition: "all 0.15s ease",
+                  flexShrink: 0,
+                  whiteSpace: "nowrap",
                 }}
               >
                 {filter}

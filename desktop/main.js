@@ -1,6 +1,11 @@
-﻿const { app, BrowserWindow, shell } = require('electron');
+const { app, BrowserWindow, shell, Notification, ipcMain } = require('electron');
 const path = require('path');
 const { randomBytes } = require('crypto');
+
+// Set Application User Model ID on Windows so desktop notifications show properly with icon and app title
+if (process.platform === 'win32') {
+  app.setAppUserModelId('Atlas');
+}
 
 // Load .env if present
 try {
@@ -12,6 +17,31 @@ try {
 const ATLAS_WEB_URL = process.env.ATLAS_WEB_URL || 'http://localhost:3000';
 
 let mainWindow;
+
+// Handle Native Desktop Notifications from renderer
+ipcMain.on('show-notification', (event, data = {}) => {
+  const { title = 'Atlas Alert', body = '', sound = true } = data;
+  
+  if (Notification.isSupported()) {
+    const iconPath = path.join(__dirname, 'assets', 'icon.png');
+    const notification = new Notification({
+      title: title,
+      body: body,
+      icon: iconPath,
+      silent: !sound,
+    });
+
+    notification.on('click', () => {
+      if (mainWindow) {
+        if (mainWindow.isMinimized()) mainWindow.restore();
+        mainWindow.show();
+        mainWindow.focus();
+      }
+    });
+
+    notification.show();
+  }
+});
 
 // Generate a one-time nonce per sign-in attempt so Electron can poll for it
 let currentNonce = null;
@@ -68,7 +98,7 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      sandbox: true,
+      sandbox: false,
       preload: path.join(__dirname, 'preload.js'),
     },
   });

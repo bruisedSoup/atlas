@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Sidebar } from "@/app/src/components/Sidebar";
 import { UserProfileCard } from "@/app/src/components/UserProfileCard";
 import { EmptyState } from "@/app/src/components/EmptyState";
@@ -69,10 +69,82 @@ export default function SchedulePage({ onTabChange }: SchedulePageProps = {}) {
     }
   }, [accessToken, fetchSchedule]);
 
+  const FULL_DAY_NAMES: Record<string, string> = {
+    Mon: "Monday",
+    Tue: "Tuesday",
+    Wed: "Wednesday",
+    Thu: "Thursday",
+    Fri: "Friday",
+    Sat: "Saturday",
+    Sun: "Sunday",
+  };
+
+  // Helper score to keep the schedule block with the most complete details
+  const getCompletenessScore = (b: ScheduleBlockItem) => {
+    let score = 0;
+    if (b.course_code && !["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"].includes(b.course_code.toUpperCase())) {
+      score += 10;
+    }
+    if (b.room_location && b.room_location.trim().length > 0) score += 5;
+    if (b.instructor_name && b.instructor_name.trim().length > 0) score += 5;
+    if (b.course) score += 3;
+    if (b.title && b.course_name) score += 2;
+    return score;
+  };
+
+  const normalizeTitle = (b: ScheduleBlockItem) => {
+    return (b.title || b.course_name || "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, "")
+      .trim();
+  };
+
+  const normalizeTime = (t: string) => {
+    if (!t) return "";
+    const parts = t.split(":");
+    return `${parts[0] || "00"}:${parts[1] || "00"}`;
+  };
+
+  // Deduplicate schedule blocks, keeping the card with complete information
+  const deduplicatedBlocks = React.useMemo(() => {
+    const groups: Record<string, ScheduleBlockItem[]> = {};
+
+    scheduleBlocks.forEach((b) => {
+      const day = b.day_of_week;
+      const start = normalizeTime(b.start_time);
+      const end = normalizeTime(b.end_time);
+      const titleNorm = normalizeTitle(b);
+
+      const key = `${day}_${start}_${end}_${titleNorm}`;
+      if (!groups[key]) {
+        groups[key] = [];
+      }
+      groups[key].push({ ...b });
+    });
+
+    return Object.values(groups).map((group) => {
+      if (group.length === 1) return group[0];
+
+      // Sort by completeness score descending
+      group.sort((a, b) => getCompletenessScore(b) - getCompletenessScore(a));
+      const best = { ...group[0] };
+
+      // Merge any fields from other duplicates if missing in best
+      for (let i = 1; i < group.length; i++) {
+        const other = group[i];
+        if (!best.course_code && other.course_code) best.course_code = other.course_code;
+        if (!best.room_location && other.room_location) best.room_location = other.room_location;
+        if (!best.instructor_name && other.instructor_name) best.instructor_name = other.instructor_name;
+        if (!best.course_name && other.course_name) best.course_name = other.course_name;
+      }
+      return best;
+    });
+  }, [scheduleBlocks]);
+
   const daysFilter = ["All", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
   // Filter schedule blocks by selected day
-  const filteredBlocks = scheduleBlocks.filter((b) => {
+  const filteredBlocks = deduplicatedBlocks.filter((b) => {
     if (activeDay === "All") return true;
     return b.day_of_week === activeDay;
   });
@@ -106,11 +178,55 @@ export default function SchedulePage({ onTabChange }: SchedulePageProps = {}) {
     return map[colorName || "purple"] || map.purple;
   };
 
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const startX = useRef(0);
+  const scrollLeftStart = useRef(0);
+  const dragDistance = useRef(0);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!scrollRef.current) return;
+    setIsDragging(true);
+    startX.current = e.pageX - scrollRef.current.offsetLeft;
+    scrollLeftStart.current = scrollRef.current.scrollLeft;
+    dragDistance.current = 0;
+  };
+
+  const handleMouseLeave = () => {
+    setIsDragging(false);
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || !scrollRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - scrollRef.current.offsetLeft;
+    const walk = x - startX.current;
+    dragDistance.current += Math.abs(walk);
+    scrollRef.current.scrollLeft = scrollLeftStart.current - walk;
+  };
+
+  const handleWheel = (e: React.WheelEvent) => {
+    if (!scrollRef.current) return;
+    if (e.deltaY !== 0 && e.deltaX === 0) {
+      scrollRef.current.scrollLeft += e.deltaY;
+    }
+  };
+
+  const handleDayClick = (day: string) => {
+    if (dragDistance.current > 5) return;
+    setActiveDay(day);
+  };
+
   return (
     <div
       style={{
         display: "flex",
-        minHeight: "100vh",
+        height: "100vh",
+        overflow: "hidden",
         background: "#f4f5f7",
         fontFamily: "'Inter', sans-serif",
       }}
@@ -127,17 +243,18 @@ export default function SchedulePage({ onTabChange }: SchedulePageProps = {}) {
       <main
         style={{
           flex: 1,
+          height: "100vh",
+          overflowY: "auto",
           padding: "24px 32px",
-          maxWidth: "1280px",
-          margin: "0 auto",
           width: "100%",
         }}
       >
+        <div style={{ maxWidth: "1280px", margin: "0 auto", paddingBottom: "32px" }}>
         {/* Top Header Section */}
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "1fr 1fr",
+            gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
             gap: "24px",
             marginBottom: "24px",
           }}
@@ -154,6 +271,8 @@ export default function SchedulePage({ onTabChange }: SchedulePageProps = {}) {
               flexDirection: "column",
               justifyContent: "space-between",
               minHeight: "155px",
+              minWidth: 0,
+              overflow: "hidden",
             }}
           >
             <div>
@@ -193,7 +312,7 @@ export default function SchedulePage({ onTabChange }: SchedulePageProps = {}) {
                   fontFamily: "'Inter', sans-serif",
                 }}
               >
-                Weekly class & activity timetable ({scheduleBlocks.length} classes scheduled)
+                Weekly class & activity timetable ({deduplicatedBlocks.length} classes scheduled)
               </p>
 
               {/* Segmented Divider lines */}
@@ -206,14 +325,31 @@ export default function SchedulePage({ onTabChange }: SchedulePageProps = {}) {
             </div>
 
             {/* Day Filter Chips */}
-            <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+            <div
+              ref={scrollRef}
+              onMouseDown={handleMouseDown}
+              onMouseLeave={handleMouseLeave}
+              onMouseUp={handleMouseUp}
+              onMouseMove={handleMouseMove}
+              onWheel={handleWheel}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                overflowX: "auto",
+                paddingBottom: "2px",
+                scrollbarWidth: "none",
+                cursor: isDragging ? "grabbing" : "grab",
+                userSelect: "none",
+              }}
+            >
               {daysFilter.map((day) => {
                 const isActive = activeDay === day;
                 return (
                   <button
                     key={day}
                     type="button"
-                    onClick={() => setActiveDay(day)}
+                    onClick={() => handleDayClick(day)}
                     style={{
                       height: "32px",
                       padding: "0 14px",
@@ -224,9 +360,11 @@ export default function SchedulePage({ onTabChange }: SchedulePageProps = {}) {
                       fontSize: "0.85rem",
                       fontFamily: "'Inter', sans-serif",
                       fontWeight: 500,
-                      cursor: "pointer",
+                      cursor: isDragging ? "grabbing" : "pointer",
                       boxShadow: isActive ? "0 2px 4px rgba(0,0,0,0.1)" : "none",
                       transition: "all 0.15s ease",
+                      flexShrink: 0,
+                      whiteSpace: "nowrap",
                     }}
                   >
                     {day}
@@ -279,7 +417,7 @@ export default function SchedulePage({ onTabChange }: SchedulePageProps = {}) {
                         margin: "0 0 12px 0",
                       }}
                     >
-                      {dayName}day
+                      {FULL_DAY_NAMES[dayName] || dayName}
                     </h3>
 
                     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "12px" }}>
@@ -322,6 +460,7 @@ export default function SchedulePage({ onTabChange }: SchedulePageProps = {}) {
               })}
             </div>
           )}
+        </div>
         </div>
       </main>
     </div>

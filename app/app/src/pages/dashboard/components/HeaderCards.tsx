@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useRef, useState } from "react";
 import { UserProfileCard } from "@/app/src/components/UserProfileCard";
 
 interface HeaderCardsProps {
@@ -20,11 +20,54 @@ export function HeaderCards({
   onFilterChange = () => {},
   customLabels = [],
 }: HeaderCardsProps) {
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const startX = useRef(0);
+  const scrollLeftStart = useRef(0);
+  const dragDistance = useRef(0);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!scrollRef.current) return;
+    setIsDragging(true);
+    startX.current = e.pageX - scrollRef.current.offsetLeft;
+    scrollLeftStart.current = scrollRef.current.scrollLeft;
+    dragDistance.current = 0;
+  };
+
+  const handleMouseLeave = () => {
+    setIsDragging(false);
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || !scrollRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - scrollRef.current.offsetLeft;
+    const walk = x - startX.current;
+    dragDistance.current += Math.abs(walk);
+    scrollRef.current.scrollLeft = scrollLeftStart.current - walk;
+  };
+
+  const handleWheel = (e: React.WheelEvent) => {
+    if (!scrollRef.current) return;
+    if (e.deltaY !== 0 && e.deltaX === 0) {
+      scrollRef.current.scrollLeft += e.deltaY;
+    }
+  };
+
+  const handleFilterClick = (filter: string) => {
+    if (dragDistance.current > 5) return;
+    onFilterChange(filter);
+  };
+
   return (
     <div
       style={{
         display: "grid",
-        gridTemplateColumns: "1fr 1fr",
+        gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
         gap: "24px",
         marginBottom: "24px",
       }}
@@ -41,6 +84,8 @@ export function HeaderCards({
           flexDirection: "column",
           justifyContent: "space-between",
           minHeight: "155px",
+          minWidth: 0,
+          overflow: "hidden",
         }}
       >
         <div>
@@ -70,9 +115,26 @@ export function HeaderCards({
         </div>
 
         {/* Filter chips */}
-        <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+        <div
+          ref={scrollRef}
+          onMouseDown={handleMouseDown}
+          onMouseLeave={handleMouseLeave}
+          onMouseUp={handleMouseUp}
+          onMouseMove={handleMouseMove}
+          onWheel={handleWheel}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            overflowX: "auto",
+            paddingBottom: "4px",
+            scrollbarWidth: "none",
+            cursor: isDragging ? "grabbing" : "grab",
+            userSelect: "none",
+          }}
+        >
           <button
-            onClick={() => onFilterChange("All")}
+            onClick={() => handleFilterClick("All")}
             style={{
               height: "30px",
               padding: "0 16px",
@@ -82,8 +144,10 @@ export function HeaderCards({
               border: "none",
               fontSize: "0.825rem",
               fontWeight: 500,
-              cursor: "pointer",
+              cursor: isDragging ? "grabbing" : "pointer",
               transition: "background 0.15s ease",
+              flexShrink: 0,
+              whiteSpace: "nowrap",
             }}
           >
             All
@@ -91,7 +155,7 @@ export function HeaderCards({
           {customLabels.map((lbl) => (
             <button
               key={lbl}
-              onClick={() => onFilterChange(lbl)}
+              onClick={() => handleFilterClick(lbl)}
               style={{
                 height: "30px",
                 padding: "0 14px",
@@ -101,8 +165,10 @@ export function HeaderCards({
                 border: "none",
                 fontSize: "0.825rem",
                 fontWeight: 500,
-                cursor: "pointer",
+                cursor: isDragging ? "grabbing" : "pointer",
                 transition: "background 0.15s ease",
+                flexShrink: 0,
+                whiteSpace: "nowrap",
               }}
             >
               {lbl}

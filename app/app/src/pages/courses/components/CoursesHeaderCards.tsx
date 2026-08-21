@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useRef, useState } from "react";
 import { UserProfileCard } from "@/app/src/components/UserProfileCard";
 
 export interface CourseFilterItem {
@@ -24,11 +24,54 @@ export function CoursesHeaderCards({
   onFilterChange,
   onOpenProfile,
 }: CoursesHeaderCardsProps) {
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const startX = useRef(0);
+  const scrollLeftStart = useRef(0);
+  const dragDistance = useRef(0);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!scrollRef.current) return;
+    setIsDragging(true);
+    startX.current = e.pageX - scrollRef.current.offsetLeft;
+    scrollLeftStart.current = scrollRef.current.scrollLeft;
+    dragDistance.current = 0;
+  };
+
+  const handleMouseLeave = () => {
+    setIsDragging(false);
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || !scrollRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - scrollRef.current.offsetLeft;
+    const walk = x - startX.current;
+    dragDistance.current += Math.abs(walk);
+    scrollRef.current.scrollLeft = scrollLeftStart.current - walk;
+  };
+
+  const handleWheel = (e: React.WheelEvent) => {
+    if (!scrollRef.current) return;
+    if (e.deltaY !== 0 && e.deltaX === 0) {
+      scrollRef.current.scrollLeft += e.deltaY;
+    }
+  };
+
+  const handleFilterClick = (filterId: string) => {
+    if (dragDistance.current > 5) return;
+    onFilterChange(filterId);
+  };
+
   return (
     <div
       style={{
         display: "grid",
-        gridTemplateColumns: "1fr 1fr",
+        gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
         gap: "24px",
         marginBottom: "24px",
       }}
@@ -45,6 +88,8 @@ export function CoursesHeaderCards({
           flexDirection: "column",
           justifyContent: "space-between",
           minHeight: "155px",
+          minWidth: 0,
+          overflow: "hidden",
         }}
       >
         <div>
@@ -98,18 +143,26 @@ export function CoursesHeaderCards({
 
         {/* Filter Pills */}
         <div
+          ref={scrollRef}
+          onMouseDown={handleMouseDown}
+          onMouseLeave={handleMouseLeave}
+          onMouseUp={handleMouseUp}
+          onMouseMove={handleMouseMove}
+          onWheel={handleWheel}
           style={{
             display: "flex",
             alignItems: "center",
             gap: "8px",
-            flexWrap: "wrap",
             overflowX: "auto",
             paddingBottom: "2px",
+            scrollbarWidth: "none",
+            cursor: isDragging ? "grabbing" : "grab",
+            userSelect: "none",
           }}
         >
           <button
             type="button"
-            onClick={() => onFilterChange("All")}
+            onClick={() => handleFilterClick("All")}
             style={{
               height: "32px",
               padding: "0 18px",
@@ -120,7 +173,7 @@ export function CoursesHeaderCards({
               fontSize: "0.85rem",
               fontFamily: "'Inter', sans-serif",
               fontWeight: 500,
-              cursor: "pointer",
+              cursor: isDragging ? "grabbing" : "pointer",
               boxShadow: activeFilter === "All" ? "0 2px 4px rgba(0,0,0,0.1)" : "none",
               transition: "all 0.15s ease",
               flexShrink: 0,
@@ -137,7 +190,7 @@ export function CoursesHeaderCards({
               <button
                 key={course.id}
                 type="button"
-                onClick={() => onFilterChange(course.id)}
+                onClick={() => handleFilterClick(course.id)}
                 title={course.course_name}
                 style={{
                   height: "32px",
@@ -149,7 +202,7 @@ export function CoursesHeaderCards({
                   fontSize: "0.85rem",
                   fontFamily: "'Inter', sans-serif",
                   fontWeight: 500,
-                  cursor: "pointer",
+                  cursor: isDragging ? "grabbing" : "pointer",
                   maxWidth: "140px",
                   overflow: "hidden",
                   textOverflow: "ellipsis",
